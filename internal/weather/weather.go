@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/fatih/color"
@@ -69,18 +70,31 @@ func QueryAPI() []byte {
 		panic(err)
 	}
 
-    return body
+	return body
 }
 
 func CreateWeather(body []byte) Data {
 	var weather Data
 
-    err := json.Unmarshal(body, &weather)
-    if err != nil {
-        panic(err)
-    }
+	err := json.Unmarshal(body, &weather)
+	if err != nil {
+		panic(err)
+	}
 
 	return weather
+}
+
+func Current(weather Data) string {
+	location := weather.Location
+	current := weather.Current
+
+    text := strings.Builder{}
+
+    text.WriteString(location.Name + ", ")
+    text.WriteString(location.Country + ": ")
+    text.WriteString(fmt.Sprintf("%.0fC, ", current.TempC))
+
+    return text.String()
 }
 
 func Display(weather Data) {
