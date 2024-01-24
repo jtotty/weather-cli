@@ -42,7 +42,7 @@ type Data struct {
 	} `json:"forecast"`
 }
 
-func QueryAPI() Data {
+func QueryAPI() []byte {
 	baseURL := "http://api.weatherapi.com/v1/forecast.json"
 	key := "7937cf0616e0430aaf534238241701"
 	location := "auto:ip"
@@ -69,11 +69,16 @@ func QueryAPI() Data {
 		panic(err)
 	}
 
+    return body
+}
+
+func CreateWeather(body []byte) Data {
 	var weather Data
-	err = json.Unmarshal(body, &weather)
-	if err != nil {
-		panic(err)
-	}
+
+    err := json.Unmarshal(body, &weather)
+    if err != nil {
+        panic(err)
+    }
 
 	return weather
 }
