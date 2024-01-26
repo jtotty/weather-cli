@@ -8,8 +8,6 @@ import (
 	"os"
 	"strings"
 	"time"
-
-	"github.com/fatih/color"
 )
 
 type Data struct {
@@ -84,33 +82,26 @@ func CreateWeather(body []byte) Data {
 	return weather
 }
 
-func Current(weather Data) string {
+func Now(weather Data) string {
 	location := weather.Location
 	current := weather.Current
 
-    text := strings.Builder{}
+	text := strings.Builder{}
 
-    text.WriteString(location.Name + ", ")
-    text.WriteString(location.Country + ": ")
-    text.WriteString(fmt.Sprintf("%.0fC, ", current.TempC))
+	text.WriteString(location.Name + ", ")
+	text.WriteString(location.Country + ": ")
+	text.WriteString(fmt.Sprintf("%.0fC", current.TempC) + ", ")
+	text.WriteString(current.Condition.Text + ", ")
+	text.WriteString("PM2.5 " + fmt.Sprintf("%.1f", current.AirQuality.PM25) + ", ")
+	text.WriteString("PM10 " + fmt.Sprintf("%.1f", current.AirQuality.PM10))
 
-    return text.String()
+	return text.String()
 }
 
-func Display(weather Data) {
-	location := weather.Location
-	current := weather.Current
+func Hours(weather Data) (string, int) {
+	rows := []string{}
 	hours := weather.Forecast.Forecastday[0].Hour
-
-	fmt.Printf(
-		"%s, %s: %.0fC, %s, PM2.5 %.1f, PM10 %.1f\n",
-		location.Name,
-		location.Country,
-		current.TempC,
-		current.Condition.Text,
-		current.AirQuality.PM25,
-		current.AirQuality.PM10,
-	)
+	longestStr := 0
 
 	for _, hour := range hours {
 		date := time.Unix(hour.TimeEpoch, 0)
@@ -120,7 +111,7 @@ func Display(weather Data) {
 			continue
 		}
 
-		message := fmt.Sprintf(
+		formatted := fmt.Sprintf(
 			"%s -- %.0fC, %.0f%%, %s\n",
 			date.Format("15:04"),
 			hour.TempC,
@@ -128,10 +119,13 @@ func Display(weather Data) {
 			hour.Condition.Text,
 		)
 
-		if hour.ChanceOfRain < 40 {
-			fmt.Print(message)
-		} else {
-			color.Blue(message)
+		len := len(formatted)
+		if len > longestStr {
+			longestStr = len
 		}
+
+		rows = append(rows, formatted)
 	}
+
+	return strings.Join(rows, ""), longestStr
 }

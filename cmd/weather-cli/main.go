@@ -7,8 +7,11 @@ import (
 
 func main() {
 	json := weather.QueryAPI()
-    data := weather.CreateWeather(json)
+	data := weather.CreateWeather(json)
 
-    current := weather.Current(data)
-    ui.FrameDisplay(current)
+	now := weather.Now(data)
+	ui.FrameDisplay(now, len(now))
+
+	hours, hoursMaxLen := weather.Hours(data)
+	ui.FrameDisplay(hours, hoursMaxLen)
 }
