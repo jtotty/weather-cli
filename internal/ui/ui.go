@@ -11,7 +11,7 @@ var frame = map[string]string{
 	"pipe":   "|",
 }
 
-func FrameDisplay(text string, maxLength int) {
+func createBorder(maxLength int) strings.Builder {
 	const padding = 2
 
 	border := strings.Builder{}
@@ -23,6 +23,12 @@ func FrameDisplay(text string, maxLength int) {
 
 	border.WriteString(frame["corner"])
 
+	return border
+}
+
+func SingleFrameDisplay(text string, maxLength int) {
+	border := createBorder(maxLength)
+
 	centerRow := strings.Builder{}
 	centerRow.WriteString(frame["pipe"] + " ")
 	centerRow.WriteString(text + " ")
@@ -33,4 +39,8 @@ func FrameDisplay(text string, maxLength int) {
 		border.String()
 
 	fmt.Println(formatted)
+}
+
+func MultilineFrameDisplay(text []string, maxLength int) {
+    // border := createBorder(maxLength)
 }

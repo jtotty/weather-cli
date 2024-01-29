@@ -82,7 +82,7 @@ func CreateWeather(body []byte) Data {
 	return weather
 }
 
-func Now(weather Data) string {
+func Now(weather *Data) string {
 	location := weather.Location
 	current := weather.Current
 
@@ -98,7 +98,7 @@ func Now(weather Data) string {
 	return text.String()
 }
 
-func Hours(weather Data) (string, int) {
+func Hours(weather *Data) (string, int) {
 	rows := []string{}
 	hours := weather.Forecast.Forecastday[0].Hour
 	longestStr := 0

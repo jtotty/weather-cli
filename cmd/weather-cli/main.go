@@ -9,9 +9,9 @@ func main() {
 	json := weather.QueryAPI()
 	data := weather.CreateWeather(json)
 
-	now := weather.Now(data)
-	ui.FrameDisplay(now, len(now))
+	now := weather.Now(&data)
+	ui.SingleFrameDisplay(now, len(now))
 
-	hours, hoursMaxLen := weather.Hours(data)
-	ui.FrameDisplay(hours, hoursMaxLen)
+	// hours, hoursMaxLen := weather.Hours(&data)
+	// ui.MultilineFrameDisplay(hours, hoursMaxLen)
 }
