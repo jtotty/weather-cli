@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-type Data struct {
+type Weather struct {
 	Location struct {
 		Name    string `json:"name"`
 		Country string `json:"country"`
@@ -41,7 +41,7 @@ type Data struct {
 	} `json:"forecast"`
 }
 
-func QueryAPI() []byte {
+func GenerateWeather() *Weather {
 	baseURL := "http://api.weatherapi.com/v1/forecast.json"
 	key := "7937cf0616e0430aaf534238241701"
 	location := "auto:ip"
@@ -63,28 +63,24 @@ func QueryAPI() []byte {
 		panic("Weather API not available...")
 	}
 
+    var weather Weather
+
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
 		panic(err)
 	}
 
-	return body
-}
-
-func CreateWeather(body []byte) Data {
-	var weather Data
-
-	err := json.Unmarshal(body, &weather)
-	if err != nil {
-		panic(err)
+    jsonErr := json.Unmarshal(body, &weather)
+	if jsonErr != nil {
+		panic(jsonErr)
 	}
 
-	return weather
+	return &weather
 }
 
-func Now(weather *Data) string {
-	location := weather.Location
-	current := weather.Current
+func (w *Weather) Now() string {
+	location := w.Location
+	current := w.Current
 
 	text := strings.Builder{}
 
@@ -98,9 +94,10 @@ func Now(weather *Data) string {
 	return text.String()
 }
 
-func Hours(weather *Data) (string, int) {
+// Hourly weather data after the current time up to 11pm.
+func (w *Weather) Hours() ([]string, int) {
 	rows := []string{}
-	hours := weather.Forecast.Forecastday[0].Hour
+	hours := w.Forecast.Forecastday[0].Hour
 	longestStr := 0
 
 	for _, hour := range hours {
@@ -112,20 +109,22 @@ func Hours(weather *Data) (string, int) {
 		}
 
 		formatted := fmt.Sprintf(
-			"%s -- %.0fC, %.0f%%, %s\n",
+			"%s -- %.0fC, %.0f%%, %s",
 			date.Format("15:04"),
 			hour.TempC,
 			hour.ChanceOfRain,
 			hour.Condition.Text,
 		)
 
-		len := len(formatted)
-		if len > longestStr {
-			longestStr = len
+        formatted = strings.TrimSpace(formatted)
+
+		currLen := len(formatted)
+		if currLen > longestStr {
+			longestStr = currLen
 		}
 
 		rows = append(rows, formatted)
 	}
 
-	return strings.Join(rows, ""), longestStr
+	return rows, longestStr
 }

@@ -6,12 +6,10 @@ import (
 )
 
 func main() {
-	json := weather.QueryAPI()
-	data := weather.CreateWeather(json)
-
-	now := weather.Now(&data)
+    w := weather.GenerateWeather()
+	now := w.Now()
 	ui.SingleFrameDisplay(now, len(now))
 
-	// hours, hoursMaxLen := weather.Hours(&data)
-	// ui.MultilineFrameDisplay(hours, hoursMaxLen)
+	hours, hoursMaxLen := w.Hours()
+	ui.MultilineFrameDisplay(hours, hoursMaxLen)
 }

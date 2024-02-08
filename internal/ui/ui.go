@@ -11,36 +11,61 @@ var frame = map[string]string{
 	"pipe":   "|",
 }
 
-func createBorder(maxLength int) strings.Builder {
+func createBorder(maxLen int) string {
 	const padding = 2
 
 	border := strings.Builder{}
 	border.WriteString(frame["corner"])
 
-	for i := 0; i < maxLength+padding; i++ {
+	for i := 0; i < maxLen+padding; i++ {
 		border.WriteString(frame["border"])
 	}
 
 	border.WriteString(frame["corner"])
 
-	return border
+	return border.String()
 }
 
-func SingleFrameDisplay(text string, maxLength int) {
-	border := createBorder(maxLength)
+func SingleFrameDisplay(text string, maxLen int) {
+	border := createBorder(maxLen)
 
 	centerRow := strings.Builder{}
 	centerRow.WriteString(frame["pipe"] + " ")
 	centerRow.WriteString(text + " ")
 	centerRow.WriteString(frame["pipe"])
 
-	formatted := border.String() + "\n" +
+	formatted := border + "\n" +
 		centerRow.String() + "\n" +
-		border.String()
+		border
 
 	fmt.Println(formatted)
 }
 
-func MultilineFrameDisplay(text []string, maxLength int) {
-    // border := createBorder(maxLength)
+func MultilineFrameDisplay(rows []string, maxLen int) {
+    border := createBorder(maxLen)
+    fmt.Println(border);
+
+    for _, text := range rows {
+        strLen := len(text)
+        padding := maxLen - strLen + 1
+
+        line := strings.Builder{}
+        line.WriteString(frame["pipe"] + " ")
+        line.WriteString(addTrailingWhitespace(text, padding))
+        line.WriteString(frame["pipe"])
+        fmt.Println(line.String())
+    }
+
+    fmt.Println(border);
+}
+
+func addTrailingWhitespace(input string, count int) string {
+    sb := strings.Builder{}
+    sb.WriteString(input)
+
+    for i := 0; i < count; i++ {
+        sb.WriteByte(' ')
+    }
+
+    return sb.String()
 }
