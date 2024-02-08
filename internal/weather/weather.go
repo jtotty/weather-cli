@@ -63,13 +63,12 @@ func GenerateWeather() *Weather {
 		panic("Weather API not available...")
 	}
 
-    var weather Weather
-
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
 		panic(err)
 	}
 
+    var weather Weather
     jsonErr := json.Unmarshal(body, &weather)
 	if jsonErr != nil {
 		panic(jsonErr)
@@ -94,7 +93,7 @@ func (w *Weather) Now() string {
 	return text.String()
 }
 
-// Hourly weather data after the current time up to 11pm.
+// Hourly weather data after the current time up to 23:00 hours
 func (w *Weather) Hours() ([]string, int) {
 	rows := []string{}
 	hours := w.Forecast.Forecastday[0].Hour

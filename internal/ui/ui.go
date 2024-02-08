@@ -11,6 +11,25 @@ var frame = map[string]string{
 	"pipe":   "|",
 }
 
+type Frame struct {
+    maxLen int
+}
+
+func addTrailingWhitespace(input string, count int) string {
+    sb := strings.Builder{}
+    sb.WriteString(input)
+
+    for i := 0; i < count; i++ {
+        sb.WriteByte(' ')
+    }
+
+    return sb.String()
+}
+
+func createFrame(len int) *Frame {
+    return &Frame{maxLen: len}
+}
+
 func createBorder(maxLen int) string {
 	const padding = 2
 
@@ -57,15 +76,4 @@ func MultilineFrameDisplay(rows []string, maxLen int) {
     }
 
     fmt.Println(border);
-}
-
-func addTrailingWhitespace(input string, count int) string {
-    sb := strings.Builder{}
-    sb.WriteString(input)
-
-    for i := 0; i < count; i++ {
-        sb.WriteByte(' ')
-    }
-
-    return sb.String()
 }
