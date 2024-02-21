@@ -6,10 +6,15 @@ import (
 )
 
 func main() {
-    w := weather.GenerateWeather()
-	now := w.Now()
-	ui.SingleFrameDisplay(now, len(now))
+	w := weather.Initialize()
+	w.Heading()
+	ui.Spacer()
 
-	hours, hoursMaxLen := w.Hours()
-	ui.MultilineFrameDisplay(hours, hoursMaxLen)
+	w.CurrentConditions()
+	ui.Spacer()
+
+	w.HourlyForecast()
+	ui.Spacer()
+
+	w.Warnings()
 }

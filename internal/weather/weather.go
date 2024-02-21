@@ -8,6 +8,8 @@ import (
 	"os"
 	"strings"
 	"time"
+
+	"github.com/jtotty/weather-cli/internal/ui"
 )
 
 type Weather struct {
@@ -16,10 +18,12 @@ type Weather struct {
 		Country string `json:"country"`
 	} `json:"location"`
 	Current struct {
-		TempC     float32 `json:"temp_c"`
-		FeelsLike float32 `json:"feelslike_c"`
-		Humidity  float32 `json:"humidity"`
-		Condition struct {
+		TempC         float32 `json:"temp_c"`
+		FeelsLike     float32 `json:"feelslike_c"`
+		Humidity      float32 `json:"humidity"`
+		WindSpeed     float32 `json:"wind_mph"`
+		WindDirection string  `json:"wind_dir"`
+		Condition     struct {
 			Text string `json:"text"`
 		} `json:"condition"`
 		AirQuality struct {
@@ -39,13 +43,19 @@ type Weather struct {
 			} `json:"hour"`
 		} `json:"forecastday"`
 	} `json:"forecast"`
+	Alerts struct {
+		Alert []struct {
+			Event string `json:"event"`
+			Desc  string `json:"desc"`
+		} `json:"alert"`
+	} `json:"alerts"`
 }
 
-func GenerateWeather() *Weather {
-	baseURL := "http://api.weatherapi.com/v1/forecast.json"
+func Initialize() *Weather {
+	baseURL := "https://api.weatherapi.com/v1/forecast.json"
 	key := "7937cf0616e0430aaf534238241701"
 	location := "auto:ip"
-	options := "&days=1&aqi=yes&alerts=no"
+	options := "&days=1&aqi=yes&alerts=yes"
 
 	// Can pass in location as arg
 	if len(os.Args) >= 2 {
@@ -68,8 +78,8 @@ func GenerateWeather() *Weather {
 		panic(err)
 	}
 
-    var weather Weather
-    jsonErr := json.Unmarshal(body, &weather)
+	var weather Weather
+	jsonErr := json.Unmarshal(body, &weather)
 	if jsonErr != nil {
 		panic(jsonErr)
 	}
@@ -77,53 +87,80 @@ func GenerateWeather() *Weather {
 	return &weather
 }
 
-func (w *Weather) Now() string {
+func (w *Weather) Heading() {
 	location := w.Location
-	current := w.Current
+	now := time.Now()
 
 	text := strings.Builder{}
-
 	text.WriteString(location.Name + ", ")
-	text.WriteString(location.Country + ": ")
-	text.WriteString(fmt.Sprintf("%.0fC", current.TempC) + ", ")
-	text.WriteString(current.Condition.Text + ", ")
-	text.WriteString("PM2.5 " + fmt.Sprintf("%.1f", current.AirQuality.PM25) + ", ")
-	text.WriteString("PM10 " + fmt.Sprintf("%.1f", current.AirQuality.PM10))
+	text.WriteString(location.Country + " | " + now.Format("Mon, Jan 2 - 15:04"))
 
-	return text.String()
+	prepend := "\nWeather Forecast for "
+	border := ui.CreateBorder(text.Len() + len(prepend))
+
+	formatted := prepend +
+		text.String() + "\n" +
+		border
+
+	fmt.Println(formatted)
+}
+
+func (w *Weather) CurrentConditions() {
+	c := w.Current
+
+	output := strings.Builder{}
+	output.WriteString("Current Conditions: " + c.Condition.Text + ", ")
+	output.WriteString(fmt.Sprintf("%.0f°C", c.TempC) + " ")
+	output.WriteString("(Feels like " + fmt.Sprintf("%.0f°C", c.FeelsLike) + ")\n")
+	output.WriteString("Wind: " + c.WindDirection + " " + fmt.Sprintf("%.0f", c.WindSpeed) + " mph | ")
+	output.WriteString("Humidity: " + fmt.Sprintf("%.0f", c.Humidity) + "% | ")
+	output.WriteString("Polution: " + "pm2.5 " + fmt.Sprintf("%.0f", c.AirQuality.PM25) + " ")
+	output.WriteString("pm10 " + fmt.Sprintf("%.0f", c.AirQuality.PM10) + "\n")
+
+	fmt.Print(output.String())
 }
 
 // Hourly weather data after the current time up to 23:00 hours
-func (w *Weather) Hours() ([]string, int) {
-	rows := []string{}
+func (w *Weather) HourlyForecast() {
+	fmt.Println("Houry Forecast:")
+
 	hours := w.Forecast.Forecastday[0].Hour
-	longestStr := 0
 
 	for _, hour := range hours {
 		date := time.Unix(hour.TimeEpoch, 0)
 
-		// Only display hours in the future
+		// Only display even hours in the future
 		if date.Before(time.Now()) {
 			continue
 		}
 
-		formatted := fmt.Sprintf(
-			"%s -- %.0fC, %.0f%%, %s",
+		fmt.Printf(
+			"%s - %.0f°C - %s - %.0f%%\n",
 			date.Format("15:04"),
 			hour.TempC,
-			hour.ChanceOfRain,
 			hour.Condition.Text,
+			hour.ChanceOfRain,
 		)
+	}
+}
 
-        formatted = strings.TrimSpace(formatted)
+func (w *Weather) DailyForecast() {
 
-		currLen := len(formatted)
-		if currLen > longestStr {
-			longestStr = currLen
-		}
+}
 
-		rows = append(rows, formatted)
+func (w *Weather) Sun() {
+
+}
+
+func (w *Weather) Warnings() {
+	fmt.Print("Weather Warnings: ")
+
+	if len(w.Alerts.Alert) == 0 {
+		fmt.Println("None")
+		return
 	}
 
-	return rows, longestStr
+	for _, alert := range w.Alerts.Alert {
+		fmt.Println(alert.Event)
+	}
 }
