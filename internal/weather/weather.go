@@ -14,8 +14,9 @@ import (
 
 type Weather struct {
 	Location struct {
-		Name    string `json:"name"`
-		Country string `json:"country"`
+		Name      string `json:"name"`
+		Country   string `json:"country"`
+		LocalTime string `json:"localtime"`
 	} `json:"location"`
 	Current struct {
 		TempC         float32 `json:"temp_c"`
@@ -41,6 +42,14 @@ type Weather struct {
 				} `json:"condition"`
 				ChanceOfRain float32 `json:"chance_of_rain"`
 			} `json:"hour"`
+			AirQuality struct {
+				PM25 float32 `json:"pm2_5"`
+				PM10 float32 `json:"pm10"`
+			} `json:"air_quality"`
+			Astro struct {
+				Sunrise string `json:"sunrise"`
+				Sunset  string `json:"sunset"`
+			} `json:"astro"`
 		} `json:"forecastday"`
 	} `json:"forecast"`
 	Alerts struct {
@@ -49,6 +58,7 @@ type Weather struct {
 			Desc  string `json:"desc"`
 		} `json:"alert"`
 	} `json:"alerts"`
+	IsLocal bool
 }
 
 func Initialize() *Weather {
@@ -57,9 +67,13 @@ func Initialize() *Weather {
 	location := "auto:ip"
 	options := "&days=1&aqi=yes&alerts=yes"
 
+	var weather Weather
+	weather.IsLocal = true
+
 	// Can pass in location as arg
 	if len(os.Args) >= 2 {
 		location = os.Args[1]
+		weather.IsLocal = false
 	}
 
 	res, err := http.Get(baseURL + "?key=" + key + "&q=" + location + options)
@@ -78,7 +92,6 @@ func Initialize() *Weather {
 		panic(err)
 	}
 
-	var weather Weather
 	jsonErr := json.Unmarshal(body, &weather)
 	if jsonErr != nil {
 		panic(jsonErr)
@@ -89,53 +102,91 @@ func Initialize() *Weather {
 
 func (w *Weather) Heading() {
 	location := w.Location
-	now := time.Now()
 
 	text := strings.Builder{}
-	text.WriteString(location.Name + ", ")
-	text.WriteString(location.Country + " | " + now.Format("Mon, Jan 2 - 15:04"))
+	text.WriteString("\nWeather Forecast for " + location.Name + ", ")
+	text.WriteString(location.Country)
+	text.WriteString("\n" + ui.CreateBorder(text.Len()))
 
-	prepend := "\nWeather Forecast for "
-	border := ui.CreateBorder(text.Len() + len(prepend))
+	fmt.Print(text.String())
+}
 
-	formatted := prepend +
-		text.String() + "\n" +
-		border
+func (w *Weather) Time() {
+	location := w.Location
 
-	fmt.Println(formatted)
+	localTime, err := time.Parse("2006-01-02 15:04", location.LocalTime)
+	if err != nil {
+		panic("Error parsing local time")
+	}
+
+	now := time.Now()
+	timeFormat := "Mon, Jan 2 - 15:04"
+	timeOutput := "Time: " + now.Format(timeFormat)
+
+	if !w.IsLocal {
+		timeOutput += " (Local Time: " + localTime.Format(timeFormat) + ")"
+	}
+
+	fmt.Print(timeOutput)
 }
 
 func (w *Weather) CurrentConditions() {
 	c := w.Current
-
 	output := strings.Builder{}
-	output.WriteString("Current Conditions: " + c.Condition.Text + ", ")
-	output.WriteString(fmt.Sprintf("%.0f°C", c.TempC) + " ")
-	output.WriteString("(Feels like " + fmt.Sprintf("%.0f°C", c.FeelsLike) + ")\n")
-	output.WriteString("Wind: " + c.WindDirection + " " + fmt.Sprintf("%.0f", c.WindSpeed) + " mph | ")
-	output.WriteString("Humidity: " + fmt.Sprintf("%.0f", c.Humidity) + "% | ")
-	output.WriteString("Polution: " + "pm2.5 " + fmt.Sprintf("%.0f", c.AirQuality.PM25) + " ")
-	output.WriteString("pm10 " + fmt.Sprintf("%.0f", c.AirQuality.PM10) + "\n")
+
+	output.WriteString(
+		"Current Conditions: " +
+			ui.GetWeatherIcon(c.Condition.Text) + " " + c.Condition.Text + ", " +
+			fmt.Sprintf("%.0f°C", c.TempC) + " " +
+			"(Feels like " + fmt.Sprintf("%.0f°C", c.FeelsLike) + ")\n")
+
+	output.WriteString(
+		"Wind: " +
+			ui.Icons["wind"] + " " +
+			c.WindDirection + " " +
+			fmt.Sprintf("%.0f", c.WindSpeed) + " mph | ")
+
+	output.WriteString(
+		"Humidity: " +
+			ui.Icons["humidity"] + " " +
+			fmt.Sprintf("%.0f", c.Humidity) + "% | ")
+
+	output.WriteString(
+		"AQI: " +
+			ui.GetAqiIcon(c.AirQuality.PM25) + " " +
+			fmt.Sprintf("%.0f", c.AirQuality.PM25) + " (PM2.5)")
 
 	fmt.Print(output.String())
 }
 
-// Hourly weather data after the current time up to 23:00 hours
 func (w *Weather) HourlyForecast() {
-	fmt.Println("Houry Forecast:")
+	fmt.Println("Hourly Forecast:")
 
 	hours := w.Forecast.Forecastday[0].Hour
+
+	currentTime := time.Now()
+	year, month, day := currentTime.Date()
+	startOfNextDay := time.Date(year, month, day, 0, 0, 0, 0, currentTime.Location()).Add(24 * time.Hour)
+
+	newLine := "\n"
 
 	for _, hour := range hours {
 		date := time.Unix(hour.TimeEpoch, 0)
 
-		// Only display even hours in the future
-		if date.Before(time.Now()) {
+		if date.Before(currentTime) {
 			continue
 		}
 
+		if date.Equal(startOfNextDay) {
+			break
+		}
+
+		if date.Add(time.Hour).Equal(startOfNextDay) {
+			newLine = ""
+		}
+
 		fmt.Printf(
-			"%s - %.0f°C - %s - %.0f%%\n",
+			"%s - %.0f°C - %s - %.0f%%"+newLine,
 			date.Format("15:04"),
 			hour.TempC,
 			hour.Condition.Text,
@@ -145,11 +196,17 @@ func (w *Weather) HourlyForecast() {
 }
 
 func (w *Weather) DailyForecast() {
-
+	fmt.Println("Daily Forecast:")
 }
 
-func (w *Weather) Sun() {
+func (w *Weather) Twilight() {
+	astro := w.Forecast.Forecastday[0].Astro
 
+	output := strings.Builder{}
+	output.WriteString("Sunrise: " + ui.Icons["sunrise"] + " " + astro.Sunrise + " | ")
+	output.WriteString( "Sunset: " + ui.Icons["sunset"] + " " + astro.Sunset)
+
+	fmt.Print(output.String())
 }
 
 func (w *Weather) Warnings() {

@@ -7,13 +7,23 @@ import (
 
 func main() {
 	w := weather.Initialize()
+
 	w.Heading()
+	ui.Spacer()
+
+	w.Time()
 	ui.Spacer()
 
 	w.CurrentConditions()
 	ui.Spacer()
 
 	w.HourlyForecast()
+	ui.Spacer()
+
+	w.DailyForecast()
+	ui.Spacer()
+
+	w.Twilight()
 	ui.Spacer()
 
 	w.Warnings()
