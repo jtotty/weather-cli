@@ -142,13 +142,13 @@ func (w *Weather) CurrentConditions() {
 
 	output.WriteString(
 		"Wind: " +
-			ui.Icons["wind"] + " " +
+			ui.GetIcon("wind") + " " +
 			c.WindDirection + " " +
 			fmt.Sprintf("%.0f", c.WindSpeed) + " mph | ")
 
 	output.WriteString(
 		"Humidity: " +
-			ui.Icons["humidity"] + " " +
+			ui.GetIcon("humidity") + " " +
 			fmt.Sprintf("%.0f", c.Humidity) + "% | ")
 
 	output.WriteString(
@@ -163,6 +163,15 @@ func (w *Weather) HourlyForecast() {
 	fmt.Println("Hourly Forecast:")
 
 	hours := w.Forecast.Forecastday[0].Hour
+
+	// Create the table header
+	fmt.Printf(
+		"%-5s | %-5s | %-5s | %s\n",
+		"Time",
+		"Temp",
+		"Rain",
+		"Condition",
+	)
 
 	currentTime := time.Now()
 	year, month, day := currentTime.Date()
@@ -186,11 +195,11 @@ func (w *Weather) HourlyForecast() {
 		}
 
 		fmt.Printf(
-			"%s - %.0f°C - %s - %.0f%%"+newLine,
+			"%s - %.0f°C - %.0f%% - %s"+newLine,
 			date.Format("15:04"),
 			hour.TempC,
-			hour.Condition.Text,
 			hour.ChanceOfRain,
+			hour.Condition.Text,
 		)
 	}
 }
@@ -203,8 +212,8 @@ func (w *Weather) Twilight() {
 	astro := w.Forecast.Forecastday[0].Astro
 
 	output := strings.Builder{}
-	output.WriteString("Sunrise: " + ui.Icons["sunrise"] + " " + astro.Sunrise + " | ")
-	output.WriteString( "Sunset: " + ui.Icons["sunset"] + " " + astro.Sunset)
+	output.WriteString("Sunrise: " + ui.GetIcon("sunrise") + " " + astro.Sunrise + " | ")
+	output.WriteString("Sunset: " + ui.GetIcon("sunset") + " " + astro.Sunset)
 
 	fmt.Print(output.String())
 }
