@@ -86,13 +86,14 @@ func GetIcon(name string) string {
 }
 
 func GetWeatherIcon(name string) string {
-	key := strings.ReplaceAll(strings.ToLower(name), " ", "_")
+    key := strings.TrimSpace(strings.ToLower(name))
+    key = strings.ReplaceAll(key, " ", "_")
 
 	if icon, ok := weatherIcons[key]; ok {
 		return icon.String()
 	}
 
-	return ""
+    return "Err: Icon not loaded"
 }
 
 func GetAqiIcon(num float32) string {

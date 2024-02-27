@@ -195,11 +195,12 @@ func (w *Weather) HourlyForecast() {
 		}
 
 		fmt.Printf(
-			"%s - %.0f°C - %.0f%% - %s"+newLine,
+			"%s - %.0f°C - %.0f%% - %s - %s"+newLine,
 			date.Format("15:04"),
 			hour.TempC,
 			hour.ChanceOfRain,
 			hour.Condition.Text,
+            ui.GetWeatherIcon(hour.Condition.Text),
 		)
 	}
 }
