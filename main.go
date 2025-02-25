@@ -1,11 +1,22 @@
 package main
 
 import (
+	"fmt"
+	"os"
+
 	"github.com/jtotty/weather-cli/internal/ui"
 	"github.com/jtotty/weather-cli/internal/weather"
+
+	"github.com/joho/godotenv"
 )
 
 func main() {
+	err := godotenv.Load(".env")
+	if err != nil {
+		fmt.Println("ENVIRONMENT ERROR: Error loading .env file")
+		os.Exit(1)
+	}
+
 	w := weather.Initialize()
 
 	w.Heading()
