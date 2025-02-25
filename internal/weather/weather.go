@@ -62,8 +62,13 @@ type Weather struct {
 }
 
 func Initialize() *Weather {
+	apiKey := os.Getenv("WEATHER_API_KEY")
+	if apiKey == "" {
+		fmt.Println("ENVIRONMENT ERROR: WEATHER_API_KEY is not set")
+		os.Exit(1)
+	}
+
 	baseURL := "https://api.weatherapi.com/v1/forecast.json"
-	key := "7937cf0616e0430aaf534238241701"
 	location := "auto:ip"
 	options := "&days=1&aqi=yes&alerts=yes"
 
@@ -76,7 +81,7 @@ func Initialize() *Weather {
 		weather.IsLocal = false
 	}
 
-	res, err := http.Get(baseURL + "?key=" + key + "&q=" + location + options)
+	res, err := http.Get(baseURL + "?key=" + apiKey + "&q=" + location + options)
 	if err != nil {
 		panic(err)
 	}
@@ -200,7 +205,7 @@ func (w *Weather) HourlyForecast() {
 			hour.TempC,
 			hour.ChanceOfRain,
 			hour.Condition.Text,
-            ui.GetWeatherIcon(hour.Condition.Text),
+			ui.GetWeatherIcon(hour.Condition.Text),
 		)
 	}
 }
