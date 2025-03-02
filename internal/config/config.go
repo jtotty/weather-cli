@@ -39,15 +39,15 @@ func (c *Config) SetLocation(location string) {
 }
 
 func (c *Config) BuildRequestURL() string {
-	options := fmt.Sprintf("&days=%d", c.Days)
+	urlParams := fmt.Sprintf("&days=%d", c.Days)
 
 	if c.IncludeAQI {
-		options += "&aqi=yes"
+		urlParams += "&aqi=yes"
 	}
 
 	if c.Alerts {
-		options += "&alerts=yes"
+		urlParams += "&alerts=yes"
 	}
 
-	return c.BaseURL + "?key=" + c.APIKey + "&q=" + c.Location + options
+	return c.BaseURL + "?key=" + c.APIKey + "&q=" + c.Location + urlParams
 }
