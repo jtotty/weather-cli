@@ -104,7 +104,7 @@ func Initialize() (*Weather, error) {
 	return &weather, nil
 }
 
-func (w *Weather) Heading() {
+func (w *Weather) Heading() string {
 	location := w.Location
 
 	text := strings.Builder{}
@@ -112,7 +112,7 @@ func (w *Weather) Heading() {
 	text.WriteString(location.Country)
 	text.WriteString("\n" + ui.CreateBorder(text.Len()))
 
-	fmt.Print(text.String())
+	return text.String()
 }
 
 func (w *Weather) Time() string {
@@ -134,7 +134,7 @@ func (w *Weather) Time() string {
 	return timeOutput
 }
 
-func (w *Weather) CurrentConditions() {
+func (w *Weather) CurrentConditions() string {
 	c := w.Current
 	output := strings.Builder{}
 
@@ -160,28 +160,29 @@ func (w *Weather) CurrentConditions() {
 			ui.GetAqiIcon(c.AirQuality.PM25) + " " +
 			fmt.Sprintf("%.0f", c.AirQuality.PM25) + " (PM2.5)")
 
-	fmt.Print(output.String())
+	return output.String()
 }
 
-func (w *Weather) HourlyForecast() {
-	fmt.Println("Hourly Forecast:")
+func (w *Weather) HourlyForecast() string {
+	output := strings.Builder{}
+	output.WriteString("Hourly Forecast:\n")
 
 	hours := w.Forecast.Forecastday[0].Hour
 
 	// Create the table header
-	fmt.Printf(
-		"%-5s | %-5s | %-5s | %s\n",
-		"Time",
-		"Temp",
-		"Rain",
-		"Condition",
+	output.WriteString(
+		fmt.Sprintf(
+			"%-5s | %-5s | %-5s | %s\n",
+			"Time",
+			"Temp",
+			"Rain",
+			"Condition",
+		),
 	)
 
 	currentTime := time.Now()
 	year, month, day := currentTime.Date()
 	startOfNextDay := time.Date(year, month, day, 0, 0, 0, 0, currentTime.Location()).Add(24 * time.Hour)
-
-	newLine := "\n"
 
 	for _, hour := range hours {
 		date := time.Unix(hour.TimeEpoch, 0)
@@ -194,44 +195,53 @@ func (w *Weather) HourlyForecast() {
 			break
 		}
 
+		newLine := "\n"
 		if date.Add(time.Hour).Equal(startOfNextDay) {
 			newLine = ""
 		}
 
-		fmt.Printf(
-			"%s - %.0f°C - %.0f%% - %s - %s"+newLine,
-			date.Format("15:04"),
-			hour.TempC,
-			hour.ChanceOfRain,
-			hour.Condition.Text,
-			ui.GetWeatherIcon(hour.Condition.Text),
+		output.WriteString(
+			fmt.Sprintf(
+				"%s - %.0f°C - %.0f%% - %s - %s%s",
+				date.Format("15:04"),
+				hour.TempC,
+				hour.ChanceOfRain,
+				hour.Condition.Text,
+				ui.GetWeatherIcon(hour.Condition.Text),
+				newLine,
+			),
 		)
 	}
+
+	return output.String()
 }
 
-func (w *Weather) DailyForecast() {
-	fmt.Println("Daily Forecast:")
+func (w *Weather) DailyForecast() string {
+	return "Daily Forecast:\n"
 }
 
-func (w *Weather) Twilight() {
+func (w *Weather) Twilight() string {
 	astro := w.Forecast.Forecastday[0].Astro
 
 	output := strings.Builder{}
 	output.WriteString("Sunrise: " + ui.GetIcon("sunrise") + " " + astro.Sunrise + " | ")
 	output.WriteString("Sunset: " + ui.GetIcon("sunset") + " " + astro.Sunset)
 
-	fmt.Print(output.String())
+	return output.String()
 }
 
-func (w *Weather) Warnings() {
-	fmt.Print("Weather Warnings: ")
+func (w *Weather) Warnings() string {
+	output := strings.Builder{}
+	output.WriteString("Weather Warnings: ")
 
 	if len(w.Alerts.Alert) == 0 {
-		fmt.Println("None")
-		return
+		output.WriteString("None")
+		return output.String()
 	}
 
 	for _, alert := range w.Alerts.Alert {
-		fmt.Println(alert.Event)
+		output.WriteString(alert.Event + "\n")
 	}
+
+	return output.String()
 }

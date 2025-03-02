@@ -23,23 +23,23 @@ func main() {
 		os.Exit(1)
 	}
 
-	w.Heading()
+	fmt.Print(w.Heading())
 	ui.Spacer()
 
-	w.Time()
+	fmt.Print(w.Time())
 	ui.Spacer()
 
-	w.CurrentConditions()
+	fmt.Print(w.CurrentConditions())
 	ui.Spacer()
 
-	w.HourlyForecast()
+	fmt.Print(w.HourlyForecast())
 	ui.Spacer()
 
-	w.DailyForecast()
+	fmt.Print(w.DailyForecast())
 	ui.Spacer()
 
-	w.Twilight()
+	fmt.Print(w.Twilight())
 	ui.Spacer()
 
-	w.Warnings()
+	fmt.Print(w.Warnings())
 }
