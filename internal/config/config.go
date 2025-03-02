@@ -3,6 +3,8 @@ package config
 import (
 	"fmt"
 	"os"
+
+	"github.com/joho/godotenv"
 )
 
 type Config struct {
@@ -25,9 +27,14 @@ func New() (*Config, error) {
 		IsLocal:    true,
 	}
 
+	err := godotenv.Load(".env")
+	if err != nil {
+		return nil, fmt.Errorf("failed to load .env file: %w", err)
+	}
+
 	cfg.APIKey = os.Getenv("WEATHER_API_KEY")
 	if cfg.APIKey == "" {
-		return nil, fmt.Errorf("WEATHER_API_KEY environment variable is not set")
+		return nil, fmt.Errorf("WEATHER_API_KEY is not set")
 	}
 
 	return cfg, nil
