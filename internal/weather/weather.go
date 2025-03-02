@@ -202,7 +202,7 @@ func (w *Weather) HourlyForecast() string {
 
 		output.WriteString(
 			fmt.Sprintf(
-				"%s - %.0f°C - %.0f%% - %s - %s"+newLine,
+				"%s - %.0f°C - %.0f%% - %s - %s%s",
 				date.Format("15:04"),
 				hour.TempC,
 				hour.ChanceOfRain,
