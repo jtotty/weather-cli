@@ -61,11 +61,10 @@ type Weather struct {
 	IsLocal bool
 }
 
-func Initialize() *Weather {
+func Initialize() (*Weather, error) {
 	apiKey := os.Getenv("WEATHER_API_KEY")
 	if apiKey == "" {
-		fmt.Println("ENVIRONMENT ERROR: WEATHER_API_KEY is not set")
-		os.Exit(1)
+		return nil, fmt.Errorf("environment error: WEATHER_API_KEY is not set")
 	}
 
 	baseURL := "https://api.weatherapi.com/v1/forecast.json"
@@ -83,26 +82,26 @@ func Initialize() *Weather {
 
 	res, err := http.Get(baseURL + "?key=" + apiKey + "&q=" + location + options)
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("API request failed: %w", err)
 	}
 
 	defer res.Body.Close()
 
 	if res.StatusCode != 200 {
-		panic("Weather API not available...")
+		return nil, fmt.Errorf("weather API not available...")
 	}
 
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
 
 	jsonErr := json.Unmarshal(body, &weather)
 	if jsonErr != nil {
-		panic(jsonErr)
+		return nil, fmt.Errorf("failed to parse JSON response: %w", jsonErr)
 	}
 
-	return &weather
+	return &weather, nil
 }
 
 func (w *Weather) Heading() {
@@ -116,12 +115,12 @@ func (w *Weather) Heading() {
 	fmt.Print(text.String())
 }
 
-func (w *Weather) Time() {
+func (w *Weather) Time() string {
 	location := w.Location
 
 	localTime, err := time.Parse("2006-01-02 15:04", location.LocalTime)
 	if err != nil {
-		panic("Error parsing local time")
+		return fmt.Sprintf("Error parsing local time: %v", err)
 	}
 
 	now := time.Now()
@@ -132,7 +131,7 @@ func (w *Weather) Time() {
 		timeOutput += " (Local Time: " + localTime.Format(timeFormat) + ")"
 	}
 
-	fmt.Print(timeOutput)
+	return timeOutput
 }
 
 func (w *Weather) CurrentConditions() {

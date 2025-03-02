@@ -13,11 +13,15 @@ import (
 func main() {
 	err := godotenv.Load(".env")
 	if err != nil {
-		fmt.Println("ENVIRONMENT ERROR: Error loading .env file")
+		fmt.Fprintf(os.Stderr, "Error loading .env file: %v\n", err)
 		os.Exit(1)
 	}
 
-	w := weather.Initialize()
+	w, err := weather.Initialize()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error initializing weather service: %v\n", err)
+		os.Exit(1)
+	}
 
 	w.Heading()
 	ui.Spacer()
