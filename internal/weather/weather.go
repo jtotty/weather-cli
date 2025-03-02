@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/jtotty/weather-cli/internal/config"
 	"github.com/jtotty/weather-cli/internal/ui"
 )
 
@@ -62,33 +63,27 @@ type Weather struct {
 }
 
 func Initialize() (*Weather, error) {
-	apiKey := os.Getenv("WEATHER_API_KEY")
-	if apiKey == "" {
-		return nil, fmt.Errorf("environment error: WEATHER_API_KEY is not set")
+	cfg, err := config.New()
+	if err != nil {
+		return nil, err
 	}
-
-	baseURL := "https://api.weatherapi.com/v1/forecast.json"
-	location := "auto:ip"
-	options := "&days=1&aqi=yes&alerts=yes"
-
-	var weather Weather
-	weather.IsLocal = true
 
 	// Can pass in location as arg
 	if len(os.Args) >= 2 {
-		location = os.Args[1]
-		weather.IsLocal = false
+		cfg.SetLocation(os.Args[1])
 	}
 
-	res, err := http.Get(baseURL + "?key=" + apiKey + "&q=" + location + options)
+	weather := &Weather{IsLocal: cfg.IsLocal}
+
+	res, err := http.Get(cfg.BuildRequestURL())
 	if err != nil {
-		return nil, fmt.Errorf("API request failed: %w", err)
+		return nil, fmt.Errorf("API request to weather API failed: %w", err)
 	}
 
 	defer res.Body.Close()
 
 	if res.StatusCode != 200 {
-		return nil, fmt.Errorf("weather API not available...")
+		return nil, fmt.Errorf("weather API not available")
 	}
 
 	body, err := io.ReadAll(res.Body)
@@ -101,7 +96,7 @@ func Initialize() (*Weather, error) {
 		return nil, fmt.Errorf("failed to parse JSON response: %w", jsonErr)
 	}
 
-	return &weather, nil
+	return weather, nil
 }
 
 func (w *Weather) Heading() string {
