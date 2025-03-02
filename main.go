@@ -4,42 +4,26 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/jtotty/weather-cli/internal/config"
+	"github.com/jtotty/weather-cli/internal/services"
 	"github.com/jtotty/weather-cli/internal/ui"
-	"github.com/jtotty/weather-cli/internal/weather"
-
-	"github.com/joho/godotenv"
 )
 
 func main() {
-	err := godotenv.Load(".env")
+	cfg, err := config.New()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error loading .env file: %v\n", err)
 		os.Exit(1)
 	}
 
-	w, err := weather.Initialize()
+	weatherService := services.NewWeatherService(cfg)
+
+	weather, err := weatherService.FetchWeather()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error initializing weather service: %v\n", err)
 		os.Exit(1)
 	}
 
-	fmt.Print(w.Heading())
-	ui.Spacer()
-
-	fmt.Print(w.Time())
-	ui.Spacer()
-
-	fmt.Print(w.CurrentConditions())
-	ui.Spacer()
-
-	fmt.Print(w.HourlyForecast())
-	ui.Spacer()
-
-	fmt.Print(w.DailyForecast())
-	ui.Spacer()
-
-	fmt.Print(w.Twilight())
-	ui.Spacer()
-
-	fmt.Print(w.Warnings())
+	display := ui.NewDisplay(cfg, weather)
+	display.PrintAll()
 }

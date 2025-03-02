@@ -1,7 +1,6 @@
 package ui
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/enescakir/emoji"
@@ -22,7 +21,7 @@ var weatherIcons = map[string]emoji.Emoji{
 	"overcast":                                 emoji.Cloud,
 	"mist":                                     emoji.Fog,
 	"patchy_rain_possible":                     emoji.CloudWithRain,
-    "patchy_rain_nearby":                       emoji.CloudWithRain,
+	"patchy_rain_nearby":                       emoji.CloudWithRain,
 	"patchy_snow_possible":                     emoji.CloudWithSnow,
 	"patchy_sleet_possible":                    emoji.CloudWithRain + emoji.Snowflake,
 	"patchy_freezing_drizzle_possible":         emoji.CloudWithRain + emoji.Ice,
@@ -87,14 +86,14 @@ func GetIcon(name string) string {
 }
 
 func GetWeatherIcon(name string) string {
-    key := strings.TrimSpace(strings.ToLower(name))
-    key = strings.ReplaceAll(key, " ", "_")
+	key := strings.TrimSpace(strings.ToLower(name))
+	key = strings.ReplaceAll(key, " ", "_")
 
 	if icon, ok := weatherIcons[key]; ok {
 		return icon.String()
 	}
 
-    return "Err: Icon not loaded"
+	return "Err: Icon not loaded"
 }
 
 func GetAqiIcon(num float32) string {
@@ -119,17 +118,4 @@ func GetAqiIcon(num float32) string {
 	}
 
 	return icon.String()
-}
-
-func CreateBorder(maxLen int) string {
-	border := strings.Builder{}
-	for i := 0; i < maxLen; i++ {
-		border.WriteString("-")
-	}
-
-	return border.String()
-}
-
-func Spacer() {
-	fmt.Print("\n\n")
 }
