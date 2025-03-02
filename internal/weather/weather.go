@@ -239,8 +239,11 @@ func (w *Weather) Warnings() string {
 		return output.String()
 	}
 
-	for _, alert := range w.Alerts.Alert {
-		output.WriteString(alert.Event + "\n")
+	for i, alert := range w.Alerts.Alert {
+		if i > 0 {
+			output.WriteString("\n")
+		}
+		output.WriteString(alert.Event)
 	}
 
 	return output.String()
