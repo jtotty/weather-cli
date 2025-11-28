@@ -7,7 +7,6 @@ import (
 
 type Config struct {
 	APIKey     string
-	BaseURL    string
 	Location   string
 	Days       int
 	IncludeAQI bool
@@ -17,7 +16,6 @@ type Config struct {
 
 func New() (*Config, error) {
 	cfg := &Config{
-		BaseURL:    "https://api.weatherapi.com/v1/forecast.json",
 		Location:   "auto:ip",
 		Days:       1,
 		IncludeAQI: true,
@@ -36,18 +34,4 @@ func New() (*Config, error) {
 func (c *Config) SetLocation(location string) {
 	c.Location = location
 	c.IsLocal = false
-}
-
-func (c *Config) BuildRequestURL() string {
-	urlParams := fmt.Sprintf("&days=%d", c.Days)
-
-	if c.IncludeAQI {
-		urlParams += "&aqi=yes"
-	}
-
-	if c.Alerts {
-		urlParams += "&alerts=yes"
-	}
-
-	return c.BaseURL + "?key=" + c.APIKey + "&q=" + c.Location + urlParams
 }

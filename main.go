@@ -4,42 +4,62 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/jtotty/weather-cli/internal/api/weather"
+	"github.com/jtotty/weather-cli/internal/config"
 	"github.com/jtotty/weather-cli/internal/ui"
-	"github.com/jtotty/weather-cli/internal/weather"
+	weatherdisplay "github.com/jtotty/weather-cli/internal/weather"
 
 	"github.com/joho/godotenv"
 )
 
 func main() {
-	err := godotenv.Load(".env")
-	if err != nil {
+	if err := godotenv.Load(".env"); err != nil {
 		fmt.Fprintf(os.Stderr, "Error loading .env file: %v\n", err)
 		os.Exit(1)
 	}
 
-	w, err := weather.Initialize()
+	cfg, err := config.New()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error initializing weather service: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Error loading config: %v\n", err)
 		os.Exit(1)
 	}
 
-	fmt.Print(w.Heading())
+	// Allow location override via command line argument
+	if len(os.Args) >= 2 {
+		cfg.SetLocation(os.Args[1])
+	}
+
+	client := weather.NewClient(cfg.APIKey)
+	data, err := client.Fetch(weather.FetchOptions{
+		Location:   cfg.Location,
+		Days:       cfg.Days,
+		IncludeAQI: cfg.IncludeAQI,
+		Alerts:     cfg.Alerts,
+	})
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error fetching weather: %v\n", err)
+		os.Exit(1)
+	}
+
+	display := weatherdisplay.NewDisplay(data, cfg.IsLocal)
+
+	fmt.Print(display.Heading())
 	ui.Spacer()
 
-	fmt.Print(w.Time())
+	fmt.Print(display.Time())
 	ui.Spacer()
 
-	fmt.Print(w.CurrentConditions())
+	fmt.Print(display.CurrentConditions())
 	ui.Spacer()
 
-	fmt.Print(w.HourlyForecast())
+	fmt.Print(display.HourlyForecast())
 	ui.Spacer()
 
-	fmt.Print(w.DailyForecast())
+	fmt.Print(display.DailyForecast())
 	ui.Spacer()
 
-	fmt.Print(w.Twilight())
+	fmt.Print(display.Twilight())
 	ui.Spacer()
 
-	fmt.Print(w.Warnings())
+	fmt.Print(display.Warnings())
 }
