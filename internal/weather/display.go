@@ -33,9 +33,16 @@ func (d *Display) Heading() string {
 	location := d.data.Location
 
 	text := strings.Builder{}
-	text.WriteString("\nWeather Forecast for " + location.Name + ", ")
+	text.WriteString("\nWeather Forecast for ")
+	text.WriteString(location.Name)
+	text.WriteString(", ")
 	text.WriteString(location.Country)
-	text.WriteString("\n" + ui.CreateBorder(text.Len()))
+
+	// Calculate border length (excluding leading newline)
+	headerLen := text.Len() - 1
+
+	text.WriteString("\n")
+	text.WriteString(ui.CreateBorder(headerLen))
 
 	return text.String()
 }
@@ -71,27 +78,35 @@ func (d *Display) CurrentConditions() string {
 	c := d.data.Current
 	output := strings.Builder{}
 
-	output.WriteString(
-		"Current Conditions: " +
-			ui.GetWeatherIcon(c.Condition.Text) + " " + c.Condition.Text + ", " +
-			fmt.Sprintf("%.0f°C", c.TempC) + " " +
-			"(Feels like " + fmt.Sprintf("%.0f°C", c.FeelsLike) + ")\n")
+	output.WriteString("Current Conditions: ")
+	output.WriteString(ui.GetWeatherIcon(c.Condition.Text))
+	output.WriteString(" ")
+	output.WriteString(c.Condition.Text)
+	output.WriteString(", ")
+	fmt.Fprintf(&output, "%.0f°C", c.TempC)
+	output.WriteString(" (Feels like ")
+	fmt.Fprintf(&output, "%.0f°C", c.FeelsLike)
+	output.WriteString(")\n")
 
-	output.WriteString(
-		"Wind: " +
-			ui.GetIcon("wind") + " " +
-			c.WindDirection + " " +
-			fmt.Sprintf("%.0f", c.WindSpeed) + " mph | ")
+	output.WriteString("Wind: ")
+	output.WriteString(ui.GetIcon("wind"))
+	output.WriteString(" ")
+	output.WriteString(c.WindDirection)
+	output.WriteString(" ")
+	fmt.Fprintf(&output, "%.0f", c.WindSpeed)
+	output.WriteString(" mph | ")
 
-	output.WriteString(
-		"Humidity: " +
-			ui.GetIcon("humidity") + " " +
-			fmt.Sprintf("%.0f", c.Humidity) + "% | ")
+	output.WriteString("Humidity: ")
+	output.WriteString(ui.GetIcon("humidity"))
+	output.WriteString(" ")
+	fmt.Fprintf(&output, "%.0f", c.Humidity)
+	output.WriteString("% | ")
 
-	output.WriteString(
-		"AQI: " +
-			ui.GetAqiIcon(c.AirQuality.PM25) + " " +
-			fmt.Sprintf("%.0f", c.AirQuality.PM25) + " (PM2.5)")
+	output.WriteString("AQI: ")
+	output.WriteString(ui.GetAqiIcon(c.AirQuality.PM25))
+	output.WriteString(" ")
+	fmt.Fprintf(&output, "%.0f", c.AirQuality.PM25)
+	output.WriteString(" (PM2.5)")
 
 	return output.String()
 }
@@ -170,8 +185,15 @@ func (d *Display) Twilight() string {
 	}
 
 	output := strings.Builder{}
-	output.WriteString("Sunrise: " + ui.GetIcon("sunrise") + " " + astro.Sunrise + " | ")
-	output.WriteString("Sunset: " + ui.GetIcon("sunset") + " " + astro.Sunset)
+	output.WriteString("Sunrise: ")
+	output.WriteString(ui.GetIcon("sunrise"))
+	output.WriteString(" ")
+	output.WriteString(astro.Sunrise)
+	output.WriteString(" | ")
+	output.WriteString("Sunset: ")
+	output.WriteString(ui.GetIcon("sunset"))
+	output.WriteString(" ")
+	output.WriteString(astro.Sunset)
 
 	return output.String()
 }
