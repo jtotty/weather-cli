@@ -241,9 +241,20 @@ func TestDailyForecast_MultipleDays(t *testing.T) {
 		t.Errorf("DailyForecast() = %q, want string containing 'Wed 03'", result)
 	}
 
-	// Should contain temperatures for tomorrow
-	if !strings.Contains(result, "12°C/5°C") {
-		t.Errorf("DailyForecast() = %q, want string containing '12°C/5°C'", result)
+	// Should contain temperatures for tomorrow (now in separate columns)
+	if !strings.Contains(result, "12°C") {
+		t.Errorf("DailyForecast() = %q, want string containing '12°C'", result)
+	}
+	if !strings.Contains(result, "5°C") {
+		t.Errorf("DailyForecast() = %q, want string containing '5°C'", result)
+	}
+
+	// Should contain column headers
+	if !strings.Contains(result, "High") {
+		t.Errorf("DailyForecast() = %q, want string containing 'High'", result)
+	}
+	if !strings.Contains(result, "Low") {
+		t.Errorf("DailyForecast() = %q, want string containing 'Low'", result)
 	}
 
 	// Should contain rain chance

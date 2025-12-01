@@ -123,16 +123,7 @@ func (d *Display) HourlyForecast() string {
 
 	output := strings.Builder{}
 	output.WriteString("Hourly Forecast:\n")
-
-	output.WriteString(
-		fmt.Sprintf(
-			"%-5s | %-5s | %-5s | %s\n",
-			"Time",
-			"Temp",
-			"Rain",
-			"Condition",
-		),
-	)
+	output.WriteString("Time  | Temp  | Rain | Condition\n")
 
 	currentTime := time.Now()
 	year, month, day := currentTime.Date()
@@ -156,12 +147,12 @@ func (d *Display) HourlyForecast() string {
 
 		output.WriteString(
 			fmt.Sprintf(
-				"%s - %.0f°C - %.0f%% - %s - %s%s",
+				"%s | %3.0f°C | %3.0f%% | %s %s%s",
 				date.Format("15:04"),
 				hour.TempC,
 				hour.ChanceOfRain,
-				hour.Condition.Text,
 				ui.GetWeatherIcon(hour.Condition.Text),
+				hour.Condition.Text,
 				newLine,
 			),
 		)
@@ -177,6 +168,7 @@ func (d *Display) DailyForecast() string {
 
 	output := strings.Builder{}
 	output.WriteString("Daily Forecast:\n")
+	output.WriteString("Day    | High  | Low   | Rain | Condition\n")
 
 	// Skip today (index 0), show future days only
 	for _, day := range d.data.Forecast.Forecastday[1:] {
@@ -187,12 +179,12 @@ func (d *Display) DailyForecast() string {
 
 		output.WriteString(
 			fmt.Sprintf(
-				"%s - %s %.0f°C/%.0f°C - Rain: %d%% - %s\n",
+				"%s | %3.0f°C | %3.0f°C | %3d%% | %s %s\n",
 				date.Format("Mon 02"),
-				ui.GetWeatherIcon(day.Day.Condition.Text),
 				day.Day.MaxTempC,
 				day.Day.MinTempC,
 				day.Day.ChanceOfRain,
+				ui.GetWeatherIcon(day.Day.Condition.Text),
 				day.Day.Condition.Text,
 			),
 		)
