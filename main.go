@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/jtotty/weather-cli/internal/api/weather"
 	"github.com/jtotty/weather-cli/internal/config"
@@ -26,7 +27,19 @@ func main() {
 
 	// Allow location override via command line argument
 	if len(os.Args) >= 2 {
-		cfg.SetLocation(os.Args[1])
+		location := strings.TrimSpace(os.Args[1])
+
+		if location == "" {
+			fmt.Fprintf(os.Stderr, "Error: location cannot be empty\n")
+			os.Exit(1)
+		}
+
+		if len(location) > 100 {
+			fmt.Fprintf(os.Stderr, "Error: location too long (max 100 characters)\n")
+			os.Exit(1)
+		}
+
+		cfg.SetLocation(location)
 	}
 
 	client := weather.NewClient(cfg.APIKey)
@@ -41,7 +54,11 @@ func main() {
 		os.Exit(1)
 	}
 
-	display := weatherdisplay.NewDisplay(data, cfg.IsLocal)
+	display, err := weatherdisplay.NewDisplay(data, cfg.IsLocal)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error creating display: %v\n", err)
+		os.Exit(1)
+	}
 
 	fmt.Print(display.Heading())
 	ui.Spacer()

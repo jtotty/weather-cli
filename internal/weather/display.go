@@ -14,11 +14,19 @@ type Display struct {
 	isLocal bool
 }
 
-func NewDisplay(data *api.Response, isLocal bool) *Display {
+func NewDisplay(data *api.Response, isLocal bool) (*Display, error) {
+	if data == nil {
+		return nil, fmt.Errorf("weather data is nil")
+	}
+
+	if len(data.Forecast.Forecastday) == 0 {
+		return nil, fmt.Errorf("no forecast data available")
+	}
+
 	return &Display{
 		data:    data,
 		isLocal: isLocal,
-	}
+	}, nil
 }
 
 func (d *Display) Heading() string {
@@ -33,15 +41,19 @@ func (d *Display) Heading() string {
 }
 
 func (d *Display) Time() string {
+	if d.data == nil || d.data.Location == (api.Location{}) {
+		return "Time: No data available\n"
+	}
+
 	location := d.data.Location
+	timeFormat := "Mon, Jan 2 - 15:04"
+	now := time.Now()
 
 	localTime, err := time.Parse("2006-01-02 15:04", location.LocalTime)
 	if err != nil {
-		return fmt.Sprintf("Error parsing local time: %v", err)
+		return "Time: " + now.Format(timeFormat)
 	}
 
-	now := time.Now()
-	timeFormat := "Mon, Jan 2 - 15:04"
 	timeOutput := "Time: " + now.Format(timeFormat)
 
 	if !d.isLocal {
@@ -52,6 +64,10 @@ func (d *Display) Time() string {
 }
 
 func (d *Display) CurrentConditions() string {
+	if d.data == nil || d.data.Current == (api.Current{}) {
+		return "Current Conditions: No data available\n"
+	}
+
 	c := d.data.Current
 	output := strings.Builder{}
 
@@ -81,10 +97,17 @@ func (d *Display) CurrentConditions() string {
 }
 
 func (d *Display) HourlyForecast() string {
-	output := strings.Builder{}
-	output.WriteString("Hourly Forecast:\n")
+	if d.data == nil || len(d.data.Forecast.Forecastday) == 0 {
+		return "Hourly Forecast: No data available\n"
+	}
 
 	hours := d.data.Forecast.Forecastday[0].Hour
+	if len(hours) == 0 {
+		return "Hourly Forecast: No hourly data available\n"
+	}
+
+	output := strings.Builder{}
+	output.WriteString("Hourly Forecast:\n")
 
 	output.WriteString(
 		fmt.Sprintf(
@@ -137,7 +160,14 @@ func (d *Display) DailyForecast() string {
 }
 
 func (d *Display) Twilight() string {
+	if d.data == nil || len(d.data.Forecast.Forecastday) == 0 {
+		return "Twilight: No data available\n"
+	}
+
 	astro := d.data.Forecast.Forecastday[0].Astro
+	if astro.Sunrise == "" || astro.Sunset == "" {
+		return "Twilight: No sunrise or sunset data available\n"
+	}
 
 	output := strings.Builder{}
 	output.WriteString("Sunrise: " + ui.GetIcon("sunrise") + " " + astro.Sunrise + " | ")
@@ -147,13 +177,12 @@ func (d *Display) Twilight() string {
 }
 
 func (d *Display) Warnings() string {
+	if d.data == nil || len(d.data.Alerts.Alert) == 0 {
+		return "Weather Warnings: None\n"
+	}
+
 	output := strings.Builder{}
 	output.WriteString("Weather Warnings: ")
-
-	if len(d.data.Alerts.Alert) == 0 {
-		output.WriteString("None")
-		return output.String()
-	}
 
 	for i, alert := range d.data.Alerts.Alert {
 		if i > 0 {

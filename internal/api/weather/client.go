@@ -5,9 +5,12 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
+	"time"
 )
 
 const baseURL = "https://api.weatherapi.com/v1/forecast.json"
+const maxResponseSize = 10 * 1024 * 1024 // 10MB to prevent DoS
 
 type Client struct {
 	httpClient *http.Client
@@ -16,8 +19,17 @@ type Client struct {
 
 func NewClient(apiKey string) *Client {
 	return &Client{
-		httpClient: http.DefaultClient,
-		apiKey:     apiKey,
+		httpClient: &http.Client{
+			Timeout: 30 * time.Second,
+			Transport: &http.Transport{
+				MaxIdleConns:          10,
+				IdleConnTimeout:       30 * time.Second,
+				DisableCompression:    false,
+				TLSHandshakeTimeout:   10 * time.Second,
+				ResponseHeaderTimeout: 10 * time.Second,
+			},
+		},
+		apiKey: apiKey,
 	}
 }
 
@@ -41,9 +53,13 @@ func (c *Client) Fetch(opts FetchOptions) (*Response, error) {
 		return nil, fmt.Errorf("weather API returned status %d", res.StatusCode)
 	}
 
-	body, err := io.ReadAll(res.Body)
+	body, err := io.ReadAll(io.LimitReader(res.Body, maxResponseSize))
 	if err != nil {
 		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	if len(body) == maxResponseSize {
+		return nil, fmt.Errorf("response too large (exceeded %d bytes)", maxResponseSize)
 	}
 
 	var response Response
@@ -54,16 +70,20 @@ func (c *Client) Fetch(opts FetchOptions) (*Response, error) {
 	return &response, nil
 }
 
+// Format URL preventing injection and properly encodes special chars
 func (c *Client) buildURL(opts FetchOptions) string {
-	url := fmt.Sprintf("%s?key=%s&q=%s&days=%d", baseURL, c.apiKey, opts.Location, opts.Days)
+	params := url.Values{}
+	params.Add("key", c.apiKey)
+	params.Add("q", opts.Location)
+	params.Add("days", fmt.Sprintf("%d", opts.Days))
 
 	if opts.IncludeAQI {
-		url += "&aqi=yes"
+		params.Add("aqi", "yes")
 	}
 
 	if opts.Alerts {
-		url += "&alerts=yes"
+		params.Add("alerts", "yes")
 	}
 
-	return url
+	return fmt.Sprintf("%s?%s", baseURL, params.Encode())
 }
