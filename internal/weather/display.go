@@ -171,7 +171,34 @@ func (d *Display) HourlyForecast() string {
 }
 
 func (d *Display) DailyForecast() string {
-	return "Daily Forecast:\n"
+	if d.data == nil || len(d.data.Forecast.Forecastday) <= 1 {
+		return "Daily Forecast: No data available\n"
+	}
+
+	output := strings.Builder{}
+	output.WriteString("Daily Forecast:\n")
+
+	// Skip today (index 0), show future days only
+	for _, day := range d.data.Forecast.Forecastday[1:] {
+		date, err := time.Parse("2006-01-02", day.Date)
+		if err != nil {
+			continue
+		}
+
+		output.WriteString(
+			fmt.Sprintf(
+				"%s - %s %.0f°C/%.0f°C - Rain: %d%% - %s\n",
+				date.Format("Mon 02"),
+				ui.GetWeatherIcon(day.Day.Condition.Text),
+				day.Day.MaxTempC,
+				day.Day.MinTempC,
+				day.Day.ChanceOfRain,
+				day.Day.Condition.Text,
+			),
+		)
+	}
+
+	return strings.TrimSuffix(output.String(), "\n")
 }
 
 func (d *Display) Twilight() string {

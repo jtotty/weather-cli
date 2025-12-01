@@ -161,3 +161,98 @@ func TestWarnings_MultipleAlerts(t *testing.T) {
 		})
 	}
 }
+
+func TestDailyForecast_NoData(t *testing.T) {
+	// Only one day (today) means no future days to show
+	data := &api.Response{
+		Forecast: api.Forecast{
+			Forecastday: []api.ForecastDay{{}},
+		},
+	}
+
+	display, err := NewDisplay(data, true)
+	if err != nil {
+		t.Fatalf("unexpected error creating display: %v", err)
+	}
+
+	result := display.DailyForecast()
+
+	// Should indicate no data available when only today exists
+	if !strings.Contains(result, "No data available") {
+		t.Errorf("DailyForecast() = %q, want string containing 'No data available'", result)
+	}
+}
+
+func TestDailyForecast_MultipleDays(t *testing.T) {
+	data := &api.Response{
+		Forecast: api.Forecast{
+			Forecastday: []api.ForecastDay{
+				{
+					// Today - should be skipped
+					Date: "2025-12-01",
+					Day: api.Day{
+						MaxTempC:     15,
+						MinTempC:     8,
+						ChanceOfRain: 20,
+						Condition:    api.Condition{Text: "Sunny"},
+					},
+				},
+				{
+					// Tomorrow - should be shown
+					Date: "2025-12-02",
+					Day: api.Day{
+						MaxTempC:     12,
+						MinTempC:     5,
+						ChanceOfRain: 60,
+						Condition:    api.Condition{Text: "Light rain"},
+					},
+				},
+				{
+					// Day after - should be shown
+					Date: "2025-12-03",
+					Day: api.Day{
+						MaxTempC:     10,
+						MinTempC:     3,
+						ChanceOfRain: 30,
+						Condition:    api.Condition{Text: "Cloudy"},
+					},
+				},
+			},
+		},
+	}
+
+	display, err := NewDisplay(data, true)
+	if err != nil {
+		t.Fatalf("unexpected error creating display: %v", err)
+	}
+
+	result := display.DailyForecast()
+
+	// Should NOT contain today (Mon 01)
+	if strings.Contains(result, "Mon 01") {
+		t.Errorf("DailyForecast() = %q, should NOT contain today 'Mon 01'", result)
+	}
+
+	// Should contain future days
+	if !strings.Contains(result, "Tue 02") {
+		t.Errorf("DailyForecast() = %q, want string containing 'Tue 02'", result)
+	}
+	if !strings.Contains(result, "Wed 03") {
+		t.Errorf("DailyForecast() = %q, want string containing 'Wed 03'", result)
+	}
+
+	// Should contain temperatures for tomorrow
+	if !strings.Contains(result, "12°C/5°C") {
+		t.Errorf("DailyForecast() = %q, want string containing '12°C/5°C'", result)
+	}
+
+	// Should contain rain chance
+	if !strings.Contains(result, "60%") {
+		t.Errorf("DailyForecast() = %q, want string containing '60%%'", result)
+	}
+
+	// Should contain condition text
+	if !strings.Contains(result, "Light rain") {
+		t.Errorf("DailyForecast() = %q, want string containing 'Light rain'", result)
+	}
+}

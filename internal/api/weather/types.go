@@ -37,9 +37,24 @@ type Forecast struct {
 }
 
 type ForecastDay struct {
+	Date       string     `json:"date"`
+	Day        Day        `json:"day"`
 	Hour       []Hour     `json:"hour"`
 	AirQuality AirQuality `json:"air_quality"`
 	Astro      Astro      `json:"astro"`
+}
+
+type Day struct {
+	MaxTempC      float32   `json:"maxtemp_c"`
+	MinTempC      float32   `json:"mintemp_c"`
+	AvgTempC      float32   `json:"avgtemp_c"`
+	MaxWindMph    float32   `json:"maxwind_mph"`
+	TotalPrecipMm float32   `json:"totalprecip_mm"`
+	AvgHumidity   float32   `json:"avghumidity"`
+	ChanceOfRain  int       `json:"daily_chance_of_rain"`
+	ChanceOfSnow  int       `json:"daily_chance_of_snow"`
+	Condition     Condition `json:"condition"`
+	UV            float32   `json:"uv"`
 }
 
 type Hour struct {

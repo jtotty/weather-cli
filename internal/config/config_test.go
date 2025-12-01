@@ -53,8 +53,8 @@ func TestNew_DefaultValues(t *testing.T) {
 	if cfg.Location != "auto:ip" {
 		t.Errorf("Location = %q, want %q", cfg.Location, "auto:ip")
 	}
-	if cfg.Days != 1 {
-		t.Errorf("Days = %d, want %d", cfg.Days, 1)
+	if cfg.Days != 7 {
+		t.Errorf("Days = %d, want %d", cfg.Days, 7)
 	}
 	if cfg.IncludeAQI != true {
 		t.Errorf("IncludeAQI = %v, want %v", cfg.IncludeAQI, true)

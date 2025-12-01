@@ -17,7 +17,7 @@ type Config struct {
 func New() (*Config, error) {
 	cfg := &Config{
 		Location:   "auto:ip",
-		Days:       1,
+		Days:       7,
 		IncludeAQI: true,
 		Alerts:     true,
 		IsLocal:    true,
