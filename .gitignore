@@ -20,3 +20,4 @@ response.json
 
 .serena
 weather-cli
+coverage.out
