@@ -1,8 +1,10 @@
 package cache
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
+	"sync"
 	"testing"
 	"time"
 
@@ -219,5 +221,265 @@ func TestCachePersistence(t *testing.T) {
 
 	if got.Location.Name != mockResponse.Location.Name {
 		t.Errorf("Get() location = %v, want %v", got.Location.Name, mockResponse.Location.Name)
+	}
+}
+
+func TestCacheInputValidation(t *testing.T) {
+	tmpDir, err := os.MkdirTemp("", "weather-cli-cache-validation-test")
+	if err != nil {
+		t.Fatalf("failed to create temp dir: %v", err)
+	}
+	defer func() { _ = os.RemoveAll(tmpDir) }()
+
+	cache := &Cache{
+		Entries: make(map[string]*Entry),
+		path:    filepath.Join(tmpDir, "cache.json"),
+		ttl:     30 * time.Minute,
+	}
+
+	t.Run("nil data", func(t *testing.T) {
+		err := cache.Set("London", nil)
+		if err == nil {
+			t.Error("Set() expected error for nil data, got nil")
+		}
+	})
+
+	t.Run("empty location", func(t *testing.T) {
+		mockResponse := &weather.Response{
+			Location: weather.Location{Name: "London"},
+		}
+		err := cache.Set("", mockResponse)
+		if err == nil {
+			t.Error("Set() expected error for empty location, got nil")
+		}
+	})
+
+	t.Run("whitespace only location", func(t *testing.T) {
+		mockResponse := &weather.Response{
+			Location: weather.Location{Name: "London"},
+		}
+		err := cache.Set("   ", mockResponse)
+		if err == nil {
+			t.Error("Set() expected error for whitespace-only location, got nil")
+		}
+	})
+}
+
+func TestCacheCorruptedFile(t *testing.T) {
+	tmpDir, err := os.MkdirTemp("", "weather-cli-cache-corrupt-test")
+	if err != nil {
+		t.Fatalf("failed to create temp dir: %v", err)
+	}
+	defer func() { _ = os.RemoveAll(tmpDir) }()
+
+	cachePath := filepath.Join(tmpDir, "cache.json")
+
+	// Write corrupted JSON
+	err = os.WriteFile(cachePath, []byte("invalid json{{{"), 0600)
+	if err != nil {
+		t.Fatalf("failed to write corrupted cache: %v", err)
+	}
+
+	// Cache should still be usable with empty entries
+	cache := &Cache{
+		Entries: make(map[string]*Entry),
+		path:    cachePath,
+		ttl:     30 * time.Minute,
+	}
+
+	err = cache.load()
+	if err == nil {
+		t.Error("expected error when loading corrupted cache")
+	}
+
+	// Cache should still be usable
+	if cache.Entries == nil {
+		t.Error("cache.Entries should not be nil after failed load")
+	}
+
+	// Should be able to write new data
+	mockResponse := &weather.Response{
+		Location: weather.Location{Name: "London"},
+	}
+	err = cache.Set("London", mockResponse)
+	if err != nil {
+		t.Errorf("Set() after corrupted load failed: %v", err)
+	}
+}
+
+func TestCacheStats(t *testing.T) {
+	tmpDir, err := os.MkdirTemp("", "weather-cli-cache-stats-test")
+	if err != nil {
+		t.Fatalf("failed to create temp dir: %v", err)
+	}
+	defer func() { _ = os.RemoveAll(tmpDir) }()
+
+	cache := &Cache{
+		Entries: make(map[string]*Entry),
+		path:    filepath.Join(tmpDir, "cache.json"),
+		ttl:     1 * time.Hour,
+	}
+
+	mockResponse := &weather.Response{
+		Location: weather.Location{Name: "London"},
+	}
+
+	// Add some entries
+	_ = cache.Set("London", mockResponse)
+	_ = cache.Set("Paris", mockResponse)
+
+	// Add an expired entry manually
+	cache.mu.Lock()
+	cache.Entries["expired"] = &Entry{
+		Location: "Expired",
+		Data:     mockResponse,
+		CachedAt: time.Now().Add(-2 * time.Hour),
+	}
+	cache.mu.Unlock()
+
+	total, valid, expired := cache.Stats()
+
+	if total != 3 {
+		t.Errorf("Stats() total = %d, want 3", total)
+	}
+	if valid != 2 {
+		t.Errorf("Stats() valid = %d, want 2", valid)
+	}
+	if expired != 1 {
+		t.Errorf("Stats() expired = %d, want 1", expired)
+	}
+}
+
+func TestCacheMaxEntries(t *testing.T) {
+	tmpDir, err := os.MkdirTemp("", "weather-cli-cache-max-test")
+	if err != nil {
+		t.Fatalf("failed to create temp dir: %v", err)
+	}
+	defer func() { _ = os.RemoveAll(tmpDir) }()
+
+	cache := &Cache{
+		Entries: make(map[string]*Entry),
+		path:    filepath.Join(tmpDir, "cache.json"),
+		ttl:     1 * time.Hour,
+	}
+
+	mockResponse := &weather.Response{
+		Location: weather.Location{Name: "Test"},
+	}
+
+	// Add more than maxCacheEntries
+	for i := 0; i < maxCacheEntries+10; i++ {
+		location := fmt.Sprintf("Location%d", i)
+		err := cache.Set(location, mockResponse)
+		if err != nil {
+			t.Fatalf("Set() error = %v", err)
+		}
+	}
+
+	// Cache should not exceed maxCacheEntries
+	total, _, _ := cache.Stats()
+	if total > maxCacheEntries {
+		t.Errorf("Cache size = %d, want <= %d", total, maxCacheEntries)
+	}
+}
+
+func TestCacheConcurrency(t *testing.T) {
+	tmpDir, err := os.MkdirTemp("", "weather-cli-cache-race-test")
+	if err != nil {
+		t.Fatalf("failed to create temp dir: %v", err)
+	}
+	defer func() { _ = os.RemoveAll(tmpDir) }()
+
+	cache := &Cache{
+		Entries: make(map[string]*Entry),
+		path:    filepath.Join(tmpDir, "cache.json"),
+		ttl:     30 * time.Minute,
+	}
+
+	mockResponse := &weather.Response{
+		Location: weather.Location{
+			Name:    "London",
+			Country: "UK",
+		},
+	}
+
+	// Run with: go test -race
+	const goroutines = 10
+	const iterations = 50
+
+	var wg sync.WaitGroup
+	wg.Add(goroutines * 2)
+
+	// Writers
+	for i := 0; i < goroutines; i++ {
+		go func(id int) {
+			defer wg.Done()
+			for j := 0; j < iterations; j++ {
+				location := fmt.Sprintf("Location%d", id)
+				_ = cache.Set(location, mockResponse)
+			}
+		}(i)
+	}
+
+	// Readers
+	for i := 0; i < goroutines; i++ {
+		go func(id int) {
+			defer wg.Done()
+			for j := 0; j < iterations; j++ {
+				location := fmt.Sprintf("Location%d", id)
+				_ = cache.Get(location)
+			}
+		}(i)
+	}
+
+	wg.Wait()
+
+	// Verify cache is still usable after concurrent access
+	got := cache.Get("Location0")
+	if got == nil {
+		t.Error("cache should have Location0 after concurrent writes")
+	}
+}
+
+func TestCacheAtomicWrite(t *testing.T) {
+	tmpDir, err := os.MkdirTemp("", "weather-cli-cache-atomic-test")
+	if err != nil {
+		t.Fatalf("failed to create temp dir: %v", err)
+	}
+	defer func() { _ = os.RemoveAll(tmpDir) }()
+
+	cachePath := filepath.Join(tmpDir, "cache.json")
+
+	cache := &Cache{
+		Entries: make(map[string]*Entry),
+		path:    cachePath,
+		ttl:     30 * time.Minute,
+	}
+
+	mockResponse := &weather.Response{
+		Location: weather.Location{Name: "London"},
+	}
+
+	err = cache.Set("London", mockResponse)
+	if err != nil {
+		t.Fatalf("Set() error = %v", err)
+	}
+
+	// Verify no temp file remains
+	tmpFile := cachePath + ".tmp"
+	if _, err := os.Stat(tmpFile); !os.IsNotExist(err) {
+		t.Error("temp file should not exist after successful write")
+	}
+
+	// Verify cache file exists with correct permissions
+	info, err := os.Stat(cachePath)
+	if err != nil {
+		t.Fatalf("cache file should exist: %v", err)
+	}
+
+	// Check permissions (0600 = -rw-------)
+	perm := info.Mode().Perm()
+	if perm != 0600 {
+		t.Errorf("cache file permissions = %o, want 0600", perm)
 	}
 }

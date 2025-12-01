@@ -1,22 +1,23 @@
 package cache
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/jtotty/weather-cli/internal/api/weather"
 )
 
 const (
-	DefaultTTL = 30 * time.Minute
-	cacheDir   = "weather-cli"
-	cacheFile  = "cache.json"
+	DefaultTTL      = 30 * time.Minute
+	cacheSubDir     = "weather-cli"
+	cacheFileName   = "cache.json"
+	maxCacheEntries = 100
 )
 
 type Entry struct {
@@ -31,8 +32,9 @@ func (e *Entry) IsValid(ttl time.Duration) bool {
 
 type Cache struct {
 	Entries map[string]*Entry `json:"entries"`
-	path    string
-	ttl     time.Duration
+	path    string            `json:"-"`
+	ttl     time.Duration     `json:"-"`
+	mu      sync.RWMutex      `json:"-"`
 }
 
 func New(ttl time.Duration) (*Cache, error) {
@@ -45,7 +47,7 @@ func New(ttl time.Duration) (*Cache, error) {
 		return nil, fmt.Errorf("failed to get cache directory: %w", err)
 	}
 
-	cachePath := filepath.Join(cacheDir, cacheFile)
+	cachePath := filepath.Join(cacheDir, cacheFileName)
 
 	cache := &Cache{
 		Entries: make(map[string]*Entry),
@@ -53,15 +55,20 @@ func New(ttl time.Duration) (*Cache, error) {
 		ttl:     ttl,
 	}
 
-	if err := cache.load(); err != nil && !os.IsNotExist(err) {
+	if err := cache.load(); err != nil {
+		if os.IsNotExist(err) {
+			return cache, nil
+		}
 		return cache, nil
 	}
 
 	return cache, nil
 }
 
-// Get retrieves a cached weather response for the given location.
 func (c *Cache) Get(location string) *weather.Response {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+
 	key := normalizeKey(location)
 	entry, ok := c.Entries[key]
 	if !ok {
@@ -69,32 +76,68 @@ func (c *Cache) Get(location string) *weather.Response {
 	}
 
 	if !entry.IsValid(c.ttl) {
-		delete(c.Entries, key)
 		return nil
 	}
 
 	return entry.Data
 }
 
-// Set stores a weather response in the cache for the given location.
 func (c *Cache) Set(location string, data *weather.Response) error {
+	if data == nil {
+		return errors.New("cannot cache nil weather data")
+	}
+
+	location = strings.TrimSpace(location)
+	if location == "" {
+		return errors.New("cannot cache empty location")
+	}
+
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	c.cleanupExpired()
+
+	if len(c.Entries) >= maxCacheEntries {
+		c.removeOldest()
+	}
+
 	key := normalizeKey(location)
 	c.Entries[key] = &Entry{
 		Location: location,
 		Data:     data,
-		CachedAt: time.Now(),
+		CachedAt: time.Now().UTC(),
 	}
 
 	return c.save()
 }
 
 func (c *Cache) Clear() error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
 	c.Entries = make(map[string]*Entry)
 	return c.save()
 }
 
 func (c *Cache) Path() string {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
 	return c.path
+}
+
+func (c *Cache) Stats() (total, valid, expired int) {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+
+	total = len(c.Entries)
+	for _, entry := range c.Entries {
+		if entry.IsValid(c.ttl) {
+			valid++
+		} else {
+			expired++
+		}
+	}
+	return
 }
 
 func (c *Cache) load() error {
@@ -108,7 +151,7 @@ func (c *Cache) load() error {
 
 func (c *Cache) save() error {
 	dir := filepath.Dir(c.path)
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	if err := os.MkdirAll(dir, 0700); err != nil {
 		return fmt.Errorf("failed to create cache directory: %w", err)
 	}
 
@@ -117,11 +160,45 @@ func (c *Cache) save() error {
 		return fmt.Errorf("failed to marshal cache: %w", err)
 	}
 
-	if err := os.WriteFile(c.path, data, 0644); err != nil {
+	// Atomic write: write to temp file first, then rename
+	tmpFile := c.path + ".tmp"
+	if err := os.WriteFile(tmpFile, data, 0600); err != nil {
 		return fmt.Errorf("failed to write cache file: %w", err)
 	}
 
+	// Atomic rename
+	if err := os.Rename(tmpFile, c.path); err != nil {
+		_ = os.Remove(tmpFile)
+		return fmt.Errorf("failed to rename cache file: %w", err)
+	}
+
 	return nil
+}
+
+func (c *Cache) cleanupExpired() {
+	for key, entry := range c.Entries {
+		if !entry.IsValid(c.ttl) {
+			delete(c.Entries, key)
+		}
+	}
+}
+
+func (c *Cache) removeOldest() {
+	var oldestKey string
+	var oldestTime time.Time
+
+	first := true
+	for key, entry := range c.Entries {
+		if first || entry.CachedAt.Before(oldestTime) {
+			oldestTime = entry.CachedAt
+			oldestKey = key
+			first = false
+		}
+	}
+
+	if oldestKey != "" {
+		delete(c.Entries, oldestKey)
+	}
 }
 
 func getCacheDir() (string, error) {
@@ -130,13 +207,11 @@ func getCacheDir() (string, error) {
 		return "", err
 	}
 
-	return filepath.Join(userCacheDir, cacheDir), nil
+	return filepath.Join(userCacheDir, cacheSubDir), nil
 }
 
 // normalizeKey creates a consistent cache key from a location string.
-// Uses SHA256 hash to handle special characters and long location names.
+// Uses lowercase and trimmed string for case-insensitive matching.
 func normalizeKey(location string) string {
-	normalized := strings.ToLower(strings.TrimSpace(location))
-	hash := sha256.Sum256([]byte(normalized))
-	return hex.EncodeToString(hash[:8]) // Use first 8 bytes (16 hex chars)
+	return strings.ToLower(strings.TrimSpace(location))
 }
