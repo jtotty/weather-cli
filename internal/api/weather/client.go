@@ -1,6 +1,7 @@
 package weather
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -40,10 +41,15 @@ type FetchOptions struct {
 	Alerts     bool
 }
 
-func (c *Client) Fetch(opts FetchOptions) (*Response, error) {
+func (c *Client) Fetch(ctx context.Context, opts FetchOptions) (*Response, error) {
 	url := c.buildURL(opts)
 
-	res, err := c.httpClient.Get(url)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	res, err := c.httpClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("API request failed: %w", err)
 	}

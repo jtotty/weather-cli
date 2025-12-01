@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strings"
@@ -43,7 +44,8 @@ func main() {
 	}
 
 	client := weather.NewClient(cfg.APIKey)
-	data, err := client.Fetch(weather.FetchOptions{
+	ctx := context.Background()
+	data, err := client.Fetch(ctx, weather.FetchOptions{
 		Location:   cfg.Location,
 		Days:       cfg.Days,
 		IncludeAQI: cfg.IncludeAQI,
