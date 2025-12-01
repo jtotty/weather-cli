@@ -83,9 +83,9 @@ func (d *Display) CurrentConditions() string {
 	output.WriteString(" ")
 	output.WriteString(c.Condition.Text)
 	output.WriteString(", ")
-	fmt.Fprintf(&output, "%.0f°C", c.TempC)
+	output.WriteString(ui.ColorizeTemp(c.TempC))
 	output.WriteString(" (Feels like ")
-	fmt.Fprintf(&output, "%.0f°C", c.FeelsLike)
+	output.WriteString(ui.ColorizeTemp(c.FeelsLike))
 	output.WriteString(")\n")
 
 	output.WriteString("Wind: ")
@@ -147,9 +147,9 @@ func (d *Display) HourlyForecast() string {
 
 		output.WriteString(
 			fmt.Sprintf(
-				"%s | %3.0f°C | %3.0f%% | %s %s%s",
+				"%s | %s | %3.0f%% | %s %s%s",
 				date.Format("15:04"),
-				hour.TempC,
+				ui.ColorizeTemp(hour.TempC),
 				hour.ChanceOfRain,
 				ui.GetWeatherIcon(hour.Condition.Text),
 				hour.Condition.Text,
@@ -179,10 +179,10 @@ func (d *Display) DailyForecast() string {
 
 		output.WriteString(
 			fmt.Sprintf(
-				"%s | %3.0f°C | %3.0f°C | %3d%% | %s %s\n",
+				"%s | %s | %s | %3d%% | %s %s\n",
 				date.Format("Mon 02"),
-				day.Day.MaxTempC,
-				day.Day.MinTempC,
+				ui.ColorizeTemp(day.Day.MaxTempC),
+				ui.ColorizeTemp(day.Day.MinTempC),
 				day.Day.ChanceOfRain,
 				ui.GetWeatherIcon(day.Day.Condition.Text),
 				day.Day.Condition.Text,
