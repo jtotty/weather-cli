@@ -7,6 +7,14 @@ import (
 	"github.com/enescakir/emoji"
 )
 
+const (
+	AQIGood          = 50
+	AQIModerate      = 100
+	AQISensitive     = 150
+	AQIUnhealthy     = 200
+	AQIVeryUnhealthy = 300
+)
+
 var icons = map[string]emoji.Emoji{
 	"wind":     emoji.LeafFlutteringInWind,
 	"humidity": emoji.Droplet,
@@ -22,7 +30,7 @@ var weatherIcons = map[string]emoji.Emoji{
 	"overcast":                                 emoji.Cloud,
 	"mist":                                     emoji.Fog,
 	"patchy_rain_possible":                     emoji.CloudWithRain,
-        "patchy_rain_nearby":                       emoji.CloudWithRain,
+	"patchy_rain_nearby":                       emoji.CloudWithRain,
 	"patchy_snow_possible":                     emoji.CloudWithSnow,
 	"patchy_sleet_possible":                    emoji.CloudWithRain + emoji.Snowflake,
 	"patchy_freezing_drizzle_possible":         emoji.CloudWithRain + emoji.Ice,
@@ -87,35 +95,37 @@ func GetIcon(name string) string {
 }
 
 func GetWeatherIcon(name string) string {
-    key := strings.TrimSpace(strings.ToLower(name))
-    key = strings.ReplaceAll(key, " ", "_")
+	key := strings.TrimSpace(strings.ToLower(name))
+	key = strings.ReplaceAll(key, " ", "_")
 
 	if icon, ok := weatherIcons[key]; ok {
 		return icon.String()
 	}
 
-    return "Err: Icon not loaded"
+	return "Err: Icon not loaded"
 }
 
 func GetAqiIcon(num float32) string {
 	aqi := int(num)
+	if aqi < 0 {
+		return emoji.QuestionMark.String()
+	}
+
 	var icon emoji.Emoji
 
 	switch {
-	case aqi >= 0 && aqi <= 50:
+	case aqi <= AQIGood:
 		icon = aqiIcons["good"]
-	case aqi >= 51 && aqi <= 100:
+	case aqi <= AQIModerate:
 		icon = aqiIcons["moderate"]
-	case aqi >= 101 && aqi <= 150:
+	case aqi <= AQISensitive:
 		icon = aqiIcons["sensitive"]
-	case aqi >= 151 && aqi <= 200:
+	case aqi <= AQIUnhealthy:
 		icon = aqiIcons["unhealthy"]
-	case aqi >= 201 && aqi <= 300:
+	case aqi <= AQIVeryUnhealthy:
 		icon = aqiIcons["very_unhealthy"]
-	case aqi > 300:
-		icon = aqiIcons["hazardous"]
 	default:
-		icon = "" // For negative AQI values
+		icon = aqiIcons["hazardous"]
 	}
 
 	return icon.String()
