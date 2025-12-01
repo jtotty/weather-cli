@@ -14,7 +14,18 @@ import (
 	"github.com/joho/godotenv"
 )
 
+// Version is set at build time via -ldflags
+var version = "dev"
+
 func main() {
+	// Handle --version and -v flags
+	if len(os.Args) >= 2 {
+		arg := os.Args[1]
+		if arg == "--version" || arg == "-v" {
+			fmt.Printf("weather-cli %s\n", version)
+			os.Exit(0)
+		}
+	}
 	if err := godotenv.Load(".env"); err != nil {
 		fmt.Fprintf(os.Stderr, "Error loading .env file: %v\n", err)
 		os.Exit(1)
