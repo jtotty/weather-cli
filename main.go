@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/jtotty/weather-cli/internal/api/weather"
+	"github.com/jtotty/weather-cli/internal/cache"
 	"github.com/jtotty/weather-cli/internal/config"
 	"github.com/jtotty/weather-cli/internal/ui"
 	weatherdisplay "github.com/jtotty/weather-cli/internal/weather"
@@ -14,7 +15,7 @@ import (
 	"github.com/joho/godotenv"
 )
 
-// Version is set at build time via -ldflags
+// Version is set at build time via -ldflags.
 var version = "dev"
 
 func main() {
@@ -54,17 +55,35 @@ func main() {
 		cfg.SetLocation(location)
 	}
 
-	client := weather.NewClient(cfg.APIKey)
-	ctx := context.Background()
-	data, err := client.Fetch(ctx, weather.FetchOptions{
-		Location:   cfg.Location,
-		Days:       cfg.Days,
-		IncludeAQI: cfg.IncludeAQI,
-		Alerts:     cfg.Alerts,
-	})
+	weatherCache, err := cache.New(cache.DefaultTTL)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error fetching weather: %v\n", err)
-		os.Exit(1)
+		fmt.Fprintf(os.Stderr, "Warning: cache unavailable: %v\n", err)
+	}
+
+	var data *weather.Response
+	if weatherCache != nil {
+		data = weatherCache.Get(cfg.Location)
+	}
+
+	if data == nil {
+		client := weather.NewClient(cfg.APIKey)
+		ctx := context.Background()
+		data, err = client.Fetch(ctx, weather.FetchOptions{
+			Location:   cfg.Location,
+			Days:       cfg.Days,
+			IncludeAQI: cfg.IncludeAQI,
+			Alerts:     cfg.Alerts,
+		})
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error fetching weather: %v\n", err)
+			os.Exit(1)
+		}
+
+		if weatherCache != nil {
+			if cacheErr := weatherCache.Set(cfg.Location, data); cacheErr != nil {
+				fmt.Fprintf(os.Stderr, "Warning: failed to cache data: %v\n", cacheErr)
+			}
+		}
 	}
 
 	display, err := weatherdisplay.NewDisplay(data, cfg.IsLocal)
