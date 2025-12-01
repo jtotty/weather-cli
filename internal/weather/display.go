@@ -171,7 +171,9 @@ func (d *Display) DailyForecast() string {
 	output.WriteString("Day    | High  | Low   | Rain | Condition\n")
 
 	// Skip today (index 0), show future days only
-	for _, day := range d.data.Forecast.Forecastday[1:] {
+	forecastDays := d.data.Forecast.Forecastday[1:]
+	for i := range forecastDays {
+		day := &forecastDays[i]
 		date, err := time.Parse("2006-01-02", day.Date)
 		if err != nil {
 			continue

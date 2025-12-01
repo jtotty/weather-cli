@@ -44,9 +44,9 @@ type FetchOptions struct {
 }
 
 func (c *Client) Fetch(ctx context.Context, opts FetchOptions) (*Response, error) {
-	url := c.buildURL(opts)
+	reqURL := c.buildURL(opts)
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL, http.NoBody)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
@@ -55,7 +55,7 @@ func (c *Client) Fetch(ctx context.Context, opts FetchOptions) (*Response, error
 	if err != nil {
 		return nil, fmt.Errorf("API request failed: %w", err)
 	}
-	defer res.Body.Close()
+	defer func() { _ = res.Body.Close() }()
 
 	if res.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("weather API returned status %d", res.StatusCode)
