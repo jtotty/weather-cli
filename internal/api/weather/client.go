@@ -16,6 +16,7 @@ const maxResponseSize = 10 * 1024 * 1024 // 10MB to prevent DoS
 type Client struct {
 	httpClient *http.Client
 	apiKey     string
+	baseURL    string
 }
 
 func NewClient(apiKey string) *Client {
@@ -30,7 +31,8 @@ func NewClient(apiKey string) *Client {
 				ResponseHeaderTimeout: 10 * time.Second,
 			},
 		},
-		apiKey: apiKey,
+		apiKey:  apiKey,
+		baseURL: baseURL,
 	}
 }
 
@@ -76,7 +78,7 @@ func (c *Client) Fetch(ctx context.Context, opts FetchOptions) (*Response, error
 	return &response, nil
 }
 
-// Format URL preventing injection and properly encodes special chars
+// buildURL constructs the API URL with proper encoding to prevent injection
 func (c *Client) buildURL(opts FetchOptions) string {
 	params := url.Values{}
 	params.Add("key", c.apiKey)
@@ -91,5 +93,5 @@ func (c *Client) buildURL(opts FetchOptions) string {
 		params.Add("alerts", "yes")
 	}
 
-	return fmt.Sprintf("%s?%s", baseURL, params.Encode())
+	return fmt.Sprintf("%s?%s", c.baseURL, params.Encode())
 }
