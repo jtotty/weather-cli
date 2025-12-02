@@ -4,41 +4,18 @@ import (
 	"testing"
 )
 
-func TestNew_RequiresAPIKey(t *testing.T) {
-	tests := []struct {
-		name    string
-		envVal  string
-		wantErr bool
-	}{
-		{"missing key", "", true},
-		{"valid key", "abc123", false},
+func TestNew_WithEnvAPIKey(t *testing.T) {
+	t.Setenv("WEATHER_API_KEY", "test-api-key")
+
+	cfg, err := New()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
 	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Setenv("WEATHER_API_KEY", tt.envVal)
-
-			cfg, err := New()
-
-			if tt.wantErr {
-				if err == nil {
-					t.Error("expected error, got nil")
-				}
-				if cfg != nil {
-					t.Error("expected nil config when error occurs")
-				}
-			} else {
-				if err != nil {
-					t.Errorf("unexpected error: %v", err)
-				}
-				if cfg == nil {
-					t.Error("expected config, got nil")
-				}
-				if cfg != nil && cfg.APIKey != tt.envVal {
-					t.Errorf("APIKey = %q, want %q", cfg.APIKey, tt.envVal)
-				}
-			}
-		})
+	if cfg == nil {
+		t.Fatal("expected config, got nil")
+	}
+	if cfg.APIKey != "test-api-key" {
+		t.Errorf("APIKey = %q, want %q", cfg.APIKey, "test-api-key")
 	}
 }
 

@@ -236,3 +236,26 @@ func (d *Display) Warnings() string {
 
 	return output.String()
 }
+
+// Render outputs the complete weather display to stdout.
+func (d *Display) Render() {
+	fmt.Print(d.Heading())
+	ui.Spacer()
+
+	fmt.Print(d.Time())
+	ui.Spacer()
+
+	fmt.Print(d.CurrentConditions())
+	ui.Spacer()
+
+	fmt.Print(d.HourlyForecast())
+	ui.Spacer()
+
+	fmt.Print(d.DailyForecast())
+	ui.Spacer()
+
+	fmt.Print(d.Twilight())
+	ui.Spacer()
+
+	fmt.Print(d.Warnings())
+}

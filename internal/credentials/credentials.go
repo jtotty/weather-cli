@@ -40,7 +40,7 @@ func GetAPIKey() (string, error) {
 	}
 
 	if errors.Is(err, keyring.ErrUnsupportedPlatform) {
-		return "", fmt.Errorf("%w: %v", ErrKeyringUnavailable, err)
+		return "", ErrKeyringUnavailable
 	}
 
 	if err != nil {
@@ -58,7 +58,7 @@ func SetAPIKey(key string) error {
 
 	if err := keyring.Set(serviceName, apiKeyName, key); err != nil {
 		if errors.Is(err, keyring.ErrUnsupportedPlatform) {
-			return fmt.Errorf("%w: %v", ErrKeyringUnavailable, err)
+			return ErrKeyringUnavailable
 		}
 		return fmt.Errorf("failed to store API key: %w", err)
 	}
