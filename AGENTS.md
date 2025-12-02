@@ -7,6 +7,11 @@
 - Test single: `go test -run TestName ./path/to/package`
 - Lint: `go vet ./...`
 
+## API Key Setup
+- Run `weather-cli --setup` to configure your API key (stored in OS keyring)
+- Alternatively, set the `WEATHER_API_KEY` environment variable
+- Get a free API key from https://www.weatherapi.com/
+
 ## Code Style Guidelines
 - **Imports**: Group stdlib, then external, then internal (`github.com/jtotty/weather-cli/internal/...`)
 - **Formatting**: Use `gofmt` or `goimports`; tabs for indentation
@@ -16,7 +21,10 @@
 - **Strings**: Use `strings.Builder` for concatenation in methods
 
 ## Project Structure
-- `main.go` - Entry point, loads .env, initializes weather service
+- `main.go` - Entry point, handles CLI flags, initializes weather service
 - `internal/config/` - Configuration and API URL building
-- `internal/weather/` - Weather data fetching and formatting
+- `internal/credentials/` - Secure API key storage (OS keyring)
+- `internal/cache/` - File-based weather data caching (30min TTL)
+- `internal/api/weather/` - Weather API client
+- `internal/weather/` - Weather display formatting
 - `internal/ui/` - UI helpers, icons, emoji mappings

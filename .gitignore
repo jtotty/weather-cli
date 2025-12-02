@@ -16,7 +16,6 @@
 go.work
 
 response.json
-.env
 
 .serena
 weather-cli

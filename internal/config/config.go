@@ -1,10 +1,10 @@
 package config
 
 import (
-	"fmt"
-	"os"
+	"github.com/jtotty/weather-cli/internal/credentials"
 )
 
+// Config holds the application configuration.
 type Config struct {
 	APIKey     string
 	Location   string
@@ -23,11 +23,12 @@ func New() (*Config, error) {
 		IsLocal:    true,
 	}
 
-	cfg.APIKey = os.Getenv("WEATHER_API_KEY")
-	if cfg.APIKey == "" {
-		return nil, fmt.Errorf("WEATHER_API_KEY environment variable is not set")
+	apiKey, err := credentials.GetAPIKey()
+	if err != nil {
+		return nil, err
 	}
 
+	cfg.APIKey = apiKey
 	return cfg, nil
 }
 
