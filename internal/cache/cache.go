@@ -82,6 +82,7 @@ func (c *Cache) Get(location string) *weather.Response {
 	return entry.Data
 }
 
+// getCacheDir returns the cache directory for weather-cli.
 func (c *Cache) Set(location string, data *weather.Response) error {
 	if data == nil {
 		return errors.New("cannot cache nil weather data")
@@ -151,7 +152,7 @@ func (c *Cache) load() error {
 
 func (c *Cache) save() error {
 	dir := filepath.Dir(c.path)
-	if err := os.MkdirAll(dir, 0700); err != nil {
+	if err := os.MkdirAll(dir, 0o700); err != nil {
 		return fmt.Errorf("failed to create cache directory: %w", err)
 	}
 
@@ -162,7 +163,7 @@ func (c *Cache) save() error {
 
 	// Atomic write: write to temp file first, then rename
 	tmpFile := c.path + ".tmp"
-	if err := os.WriteFile(tmpFile, data, 0600); err != nil {
+	if err := os.WriteFile(tmpFile, data, 0o600); err != nil {
 		return fmt.Errorf("failed to write cache file: %w", err)
 	}
 

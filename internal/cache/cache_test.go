@@ -275,7 +275,7 @@ func TestCacheCorruptedFile(t *testing.T) {
 	cachePath := filepath.Join(tmpDir, "cache.json")
 
 	// Write corrupted JSON
-	err = os.WriteFile(cachePath, []byte("invalid json{{{"), 0600)
+	err = os.WriteFile(cachePath, []byte("invalid json{{{"), 0o600)
 	if err != nil {
 		t.Fatalf("failed to write corrupted cache: %v", err)
 	}
@@ -479,7 +479,7 @@ func TestCacheAtomicWrite(t *testing.T) {
 
 	// Check permissions (0600 = -rw-------)
 	perm := info.Mode().Perm()
-	if perm != 0600 {
+	if perm != 0o600 {
 		t.Errorf("cache file permissions = %o, want 0600", perm)
 	}
 }
