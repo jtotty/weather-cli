@@ -49,10 +49,10 @@ func NewWeather(cfg *config.Config) *Weather {
 }
 
 // NewWeatherWithDeps creates a Weather service with injected dependencies (for testing).
-func NewWeatherWithDeps(cfg *config.Config, cache WeatherCache, fetcher WeatherFetcher) *Weather {
+func NewWeatherWithDeps(cfg *config.Config, c WeatherCache, fetcher WeatherFetcher) *Weather {
 	return &Weather{
 		cfg:     cfg,
-		cache:   cache,
+		cache:   c,
 		fetcher: fetcher,
 	}
 }
