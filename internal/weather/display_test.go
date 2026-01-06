@@ -1,6 +1,7 @@
 package weather
 
 import (
+	"bytes"
 	"strings"
 	"testing"
 
@@ -265,5 +266,62 @@ func TestDailyForecast_MultipleDays(t *testing.T) {
 	// Should contain condition text
 	if !strings.Contains(result, "Light rain") {
 		t.Errorf("DailyForecast() = %q, want string containing 'Light rain'", result)
+	}
+}
+
+func TestRenderTo(t *testing.T) {
+	data := &api.Response{
+		Location: api.Location{
+			Name:      "London",
+			Country:   "UK",
+			LocalTime: "2025-01-06 12:00",
+		},
+		Current: api.Current{
+			TempC:         15,
+			FeelsLike:     13,
+			Humidity:      75,
+			WindSpeed:     10,
+			WindDirection: "SW",
+			Condition:     api.Condition{Text: "Cloudy"},
+		},
+		Forecast: api.Forecast{
+			Forecastday: []api.ForecastDay{
+				{
+					Date: "2025-01-06",
+					Astro: api.Astro{
+						Sunrise: "07:30 AM",
+						Sunset:  "04:30 PM",
+					},
+					Hour: []api.Hour{},
+				},
+			},
+		},
+		Alerts: api.Alerts{Alert: []api.Alert{}},
+	}
+
+	display, err := NewDisplay(data, true)
+	if err != nil {
+		t.Fatalf("unexpected error creating display: %v", err)
+	}
+
+	var buf bytes.Buffer
+	display.RenderTo(&buf)
+
+	output := buf.String()
+
+	if !strings.Contains(output, "London") {
+		t.Error("RenderTo() output missing location name")
+	}
+	if !strings.Contains(output, "UK") {
+		t.Error("RenderTo() output missing country")
+	}
+	if !strings.Contains(output, "Cloudy") {
+		t.Error("RenderTo() output missing condition")
+	}
+	if !strings.Contains(output, "Sunrise") {
+		t.Error("RenderTo() output missing sunrise")
+	}
+	if !strings.Contains(output, "Sunset") {
+		t.Error("RenderTo() output missing sunset")
 	}
 }
