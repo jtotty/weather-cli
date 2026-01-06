@@ -7,7 +7,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/jtotty/weather-cli/internal/api/weather"
@@ -34,7 +33,6 @@ type Cache struct {
 	Entries map[string]*Entry `json:"entries"`
 	path    string            `json:"-"`
 	ttl     time.Duration     `json:"-"`
-	mu      sync.RWMutex      `json:"-"`
 }
 
 func New(ttl time.Duration) (*Cache, error) {
@@ -67,9 +65,6 @@ func New(ttl time.Duration) (*Cache, error) {
 }
 
 func (c *Cache) Get(location string) *weather.Response {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-
 	key := normalizeKey(location)
 	entry, ok := c.Entries[key]
 	if !ok {
@@ -93,9 +88,6 @@ func (c *Cache) Set(location string, data *weather.Response) error {
 		return errors.New("cannot cache empty location")
 	}
 
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
 	c.cleanupExpired()
 
 	if len(c.Entries) >= maxCacheEntries {
@@ -113,23 +105,15 @@ func (c *Cache) Set(location string, data *weather.Response) error {
 }
 
 func (c *Cache) Clear() error {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
 	c.Entries = make(map[string]*Entry)
 	return c.save()
 }
 
 func (c *Cache) Path() string {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
 	return c.path
 }
 
 func (c *Cache) Stats() (total, valid, expired int) {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-
 	total = len(c.Entries)
 	for _, entry := range c.Entries {
 		if entry.IsValid(c.ttl) {
