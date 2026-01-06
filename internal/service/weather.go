@@ -57,15 +57,14 @@ func NewWeatherWithDeps(cfg *config.Config, c WeatherCache, fetcher WeatherFetch
 	}
 }
 
-// GetWeather retrieves weather data, using cache if available.
-func (w *Weather) GetWeather() (*weather.Response, error) {
+func (w *Weather) GetWeather(ctx context.Context) (*weather.Response, error) {
 	if w.cache != nil {
 		if data := w.cache.Get(w.cfg.Location); data != nil {
 			return data, nil
 		}
 	}
 
-	data, err := w.fetchFromAPI()
+	data, err := w.fetchFromAPI(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -79,9 +78,7 @@ func (w *Weather) GetWeather() (*weather.Response, error) {
 	return data, nil
 }
 
-func (w *Weather) fetchFromAPI() (*weather.Response, error) {
-	ctx := context.Background()
-
+func (w *Weather) fetchFromAPI(ctx context.Context) (*weather.Response, error) {
 	return w.fetcher.Fetch(ctx, weather.FetchOptions{
 		Location:   w.cfg.Location,
 		Days:       w.cfg.Days,

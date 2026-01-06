@@ -93,22 +93,19 @@ func TestGetWeather_CacheHit(t *testing.T) {
 
 	svc := NewWeatherWithDeps(cfg, mockCache, mockFetcher)
 
-	result, err := svc.GetWeather()
+	result, err := svc.GetWeather(context.Background())
 	if err != nil {
 		t.Fatalf("GetWeather() error = %v", err)
 	}
 
-	// Should return cached data
 	if result != cachedResponse {
 		t.Error("GetWeather() did not return cached response")
 	}
 
-	// Should have called cache.Get
 	if len(mockCache.getCalls) != 1 || mockCache.getCalls[0] != "London" {
 		t.Errorf("Expected cache.Get(\"London\"), got %v", mockCache.getCalls)
 	}
 
-	// Should NOT have called the API
 	if len(mockFetcher.fetchCalls) != 0 {
 		t.Error("GetWeather() should not call API when cache hit")
 	}
@@ -133,22 +130,19 @@ func TestGetWeather_CacheMiss(t *testing.T) {
 
 	svc := NewWeatherWithDeps(cfg, mockCache, mockFetcher)
 
-	result, err := svc.GetWeather()
+	result, err := svc.GetWeather(context.Background())
 	if err != nil {
 		t.Fatalf("GetWeather() error = %v", err)
 	}
 
-	// Should return API response
 	if result != apiResponse {
 		t.Error("GetWeather() did not return API response")
 	}
 
-	// Should have called cache.Get
 	if len(mockCache.getCalls) != 1 {
 		t.Errorf("Expected 1 cache.Get call, got %d", len(mockCache.getCalls))
 	}
 
-	// Should have called the API with correct options
 	if len(mockFetcher.fetchCalls) != 1 {
 		t.Fatalf("Expected 1 API call, got %d", len(mockFetcher.fetchCalls))
 	}
@@ -167,7 +161,6 @@ func TestGetWeather_CacheMiss(t *testing.T) {
 		t.Error("Fetch Alerts should be true")
 	}
 
-	// Should have cached the response
 	if len(mockCache.setCalls) != 1 {
 		t.Fatalf("Expected 1 cache.Set call, got %d", len(mockCache.setCalls))
 	}
@@ -191,7 +184,7 @@ func TestGetWeather_APIError(t *testing.T) {
 
 	svc := NewWeatherWithDeps(cfg, mockCache, mockFetcher)
 
-	result, err := svc.GetWeather()
+	result, err := svc.GetWeather(context.Background())
 
 	if err == nil {
 		t.Fatal("GetWeather() expected error, got nil")
@@ -201,7 +194,6 @@ func TestGetWeather_APIError(t *testing.T) {
 		t.Error("GetWeather() expected nil result on error")
 	}
 
-	// Should NOT have cached anything
 	if len(mockCache.setCalls) != 0 {
 		t.Error("GetWeather() should not cache on API error")
 	}
@@ -225,8 +217,7 @@ func TestGetWeather_CacheSetError(t *testing.T) {
 
 	svc := NewWeatherWithDeps(cfg, mockCache, mockFetcher)
 
-	// Should still return data even if caching fails
-	result, err := svc.GetWeather()
+	result, err := svc.GetWeather(context.Background())
 	if err != nil {
 		t.Fatalf("GetWeather() error = %v", err)
 	}
@@ -249,10 +240,9 @@ func TestGetWeather_NilCache(t *testing.T) {
 
 	mockFetcher := &mockFetcher{response: apiResponse}
 
-	// Service with nil cache
 	svc := NewWeatherWithDeps(cfg, nil, mockFetcher)
 
-	result, err := svc.GetWeather()
+	result, err := svc.GetWeather(context.Background())
 	if err != nil {
 		t.Fatalf("GetWeather() error = %v", err)
 	}
@@ -261,8 +251,29 @@ func TestGetWeather_NilCache(t *testing.T) {
 		t.Error("GetWeather() should work without cache")
 	}
 
-	// Should have called the API
 	if len(mockFetcher.fetchCalls) != 1 {
 		t.Error("GetWeather() should call API when no cache")
+	}
+}
+
+func TestGetWeather_ContextCancellation(t *testing.T) {
+	cfg := &config.Config{
+		APIKey:   "test-key",
+		Location: "Berlin",
+		Days:     1,
+	}
+
+	mockCache := newMockCache()
+	mockFetcher := &mockFetcher{err: context.Canceled}
+
+	svc := NewWeatherWithDeps(cfg, mockCache, mockFetcher)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	_, err := svc.GetWeather(ctx)
+
+	if !errors.Is(err, context.Canceled) {
+		t.Errorf("GetWeather() error = %v, want context.Canceled", err)
 	}
 }

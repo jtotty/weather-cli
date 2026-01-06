@@ -1,9 +1,11 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
+	"os/signal"
 
 	"github.com/jtotty/weather-cli/internal/cli"
 	"github.com/jtotty/weather-cli/internal/config"
@@ -12,7 +14,6 @@ import (
 	"github.com/jtotty/weather-cli/internal/weather"
 )
 
-// version is set at build time via -ldflags.
 var version = "dev"
 
 func main() {
@@ -32,11 +33,13 @@ func main() {
 			cli.ExitWithError(fmt.Errorf("failed to delete API key: %w", err))
 		}
 	case cli.CommandWeather:
-		runWeather(cmd.Location)
+		ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
+		defer cancel()
+		runWeather(ctx, cmd.Location)
 	}
 }
 
-func runWeather(location string) {
+func runWeather(ctx context.Context, location string) {
 	cfg, err := loadConfig()
 	if err != nil {
 		cli.ExitWithError(err)
@@ -47,8 +50,12 @@ func runWeather(location string) {
 	}
 
 	svc := service.NewWeather(cfg)
-	data, err := svc.GetWeather()
+	data, err := svc.GetWeather(ctx)
 	if err != nil {
+		if errors.Is(err, context.Canceled) {
+			fmt.Fprintln(os.Stderr, "\nRequest cancelled.")
+			os.Exit(130)
+		}
 		cli.ExitWithError(fmt.Errorf("error fetching weather: %w", err))
 	}
 
