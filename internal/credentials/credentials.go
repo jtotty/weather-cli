@@ -22,9 +22,6 @@ var (
 	ErrKeyringUnavailable = errors.New("OS keyring unavailable")
 )
 
-// GetAPIKey retrieves the Weather API key using the following priority:
-// 1. Environment variable (WEATHER_API_KEY)
-// 2. OS Keyring
 func GetAPIKey() (string, error) {
 	if key := os.Getenv(envVarName); key != "" {
 		return key, nil
@@ -69,7 +66,7 @@ func SetAPIKey(key string) error {
 func DeleteAPIKey() error {
 	if err := keyring.Delete(serviceName, apiKeyName); err != nil {
 		if errors.Is(err, keyring.ErrNotFound) {
-			return nil // Already deleted, not an error
+			return nil
 		}
 		return fmt.Errorf("failed to delete API key: %w", err)
 	}
@@ -80,7 +77,7 @@ func PromptForAPIKey() (string, error) {
 	fmt.Print("Enter your Weather API key: ")
 
 	keyBytes, err := term.ReadPassword(int(os.Stdin.Fd()))
-	fmt.Println() // Add newline after hidden input
+	fmt.Println()
 
 	if err != nil {
 		return "", fmt.Errorf("failed to read API key: %w", err)
@@ -95,18 +92,15 @@ func PromptForAPIKey() (string, error) {
 }
 
 func IsKeyringAvailable() bool {
-	// Try to get a non-existent key to test keyring availability
 	_, err := keyring.Get(serviceName, "test-availability")
 	if err == nil {
 		return true
 	}
 
-	// ErrNotFound means keyring is available, just the key doesn't exist
 	if errors.Is(err, keyring.ErrNotFound) {
 		return true
 	}
 
-	// Any other error (including ErrUnsupportedPlatform) means unavailable
 	return false
 }
 
