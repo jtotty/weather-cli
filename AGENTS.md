@@ -1,5 +1,17 @@
 # AGENTS.md
 
+## Branching Strategy
+- **`dev`**: All work branches from `dev`
+- **`main`**: Staging/production only - never branch from or commit directly to `main`
+- **Branch naming**: `feat/`, `fix/`, `refactor/`, `docs/`, `chore/`
+
+## PR Guidelines
+- Target all PRs to `dev`
+- For large changes with dependencies, use a PR stack:
+  1. Create each PR targeting the previous branch in the stack
+  2. After the base PR merges, rebase dependent PRs onto `dev`
+- Keep PRs focused and reviewable - split unrelated changes into separate PRs
+
 ## Build & Run Commands
 - Build: `go build -o weather-cli .`
 - Run: `go run .` or `go run . <location>`
