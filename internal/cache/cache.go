@@ -59,6 +59,7 @@ func New(ttl time.Duration) (*Cache, error) {
 		if os.IsNotExist(err) {
 			return cache, nil
 		}
+		fmt.Fprintf(os.Stderr, "Warning: failed to load cache (starting fresh): %v\n", err)
 		return cache, nil
 	}
 
@@ -82,7 +83,6 @@ func (c *Cache) Get(location string) *weather.Response {
 	return entry.Data
 }
 
-// getCacheDir returns the cache directory for weather-cli.
 func (c *Cache) Set(location string, data *weather.Response) error {
 	if data == nil {
 		return errors.New("cannot cache nil weather data")
