@@ -143,9 +143,9 @@ func CreateBorder(maxLen int) string {
 }
 
 func Spacer() {
-	fmt.Fprint(os.Stdout, "\n\n")
+	_, _ = fmt.Fprint(os.Stdout, "\n\n")
 }
 
 func SpacerTo(w io.Writer) {
-	fmt.Fprint(w, "\n\n")
+	_, _ = fmt.Fprint(w, "\n\n")
 }

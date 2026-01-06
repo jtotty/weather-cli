@@ -244,23 +244,23 @@ func (d *Display) Render() {
 }
 
 func (d *Display) RenderTo(w io.Writer) {
-	fmt.Fprint(w, d.Heading())
+	_, _ = fmt.Fprint(w, d.Heading())
 	ui.SpacerTo(w)
 
-	fmt.Fprint(w, d.Time())
+	_, _ = fmt.Fprint(w, d.Time())
 	ui.SpacerTo(w)
 
-	fmt.Fprint(w, d.CurrentConditions())
+	_, _ = fmt.Fprint(w, d.CurrentConditions())
 	ui.SpacerTo(w)
 
-	fmt.Fprint(w, d.HourlyForecast())
+	_, _ = fmt.Fprint(w, d.HourlyForecast())
 	ui.SpacerTo(w)
 
-	fmt.Fprint(w, d.DailyForecast())
+	_, _ = fmt.Fprint(w, d.DailyForecast())
 	ui.SpacerTo(w)
 
-	fmt.Fprint(w, d.Twilight())
+	_, _ = fmt.Fprint(w, d.Twilight())
 	ui.SpacerTo(w)
 
-	fmt.Fprint(w, d.Warnings())
+	_, _ = fmt.Fprint(w, d.Warnings())
 }
