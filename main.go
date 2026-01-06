@@ -53,7 +53,7 @@ func runWeather(ctx context.Context, location string) {
 	data, err := svc.GetWeather(ctx)
 	if err != nil {
 		if errors.Is(err, context.Canceled) {
-			fmt.Fprintln(os.Stderr, "\nRequest cancelled.")
+			fmt.Fprintln(os.Stderr, "\nRequest canceled.")
 			os.Exit(130)
 		}
 		cli.ExitWithError(fmt.Errorf("error fetching weather: %w", err))
