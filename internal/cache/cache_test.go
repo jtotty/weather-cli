@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"sync"
 	"testing"
 	"time"
 
@@ -329,13 +328,11 @@ func TestCacheStats(t *testing.T) {
 	_ = cache.Set("Paris", mockResponse)
 
 	// Add an expired entry manually
-	cache.mu.Lock()
 	cache.Entries["expired"] = &Entry{
 		Location: "Expired",
 		Data:     mockResponse,
 		CachedAt: time.Now().Add(-2 * time.Hour),
 	}
-	cache.mu.Unlock()
 
 	total, valid, expired := cache.Stats()
 
@@ -380,64 +377,6 @@ func TestCacheMaxEntries(t *testing.T) {
 	total, _, _ := cache.Stats()
 	if total > maxCacheEntries {
 		t.Errorf("Cache size = %d, want <= %d", total, maxCacheEntries)
-	}
-}
-
-func TestCacheConcurrency(t *testing.T) {
-	tmpDir, err := os.MkdirTemp("", "weather-cli-cache-race-test")
-	if err != nil {
-		t.Fatalf("failed to create temp dir: %v", err)
-	}
-	defer func() { _ = os.RemoveAll(tmpDir) }()
-
-	cache := &Cache{
-		Entries: make(map[string]*Entry),
-		path:    filepath.Join(tmpDir, "cache.json"),
-		ttl:     30 * time.Minute,
-	}
-
-	mockResponse := &weather.Response{
-		Location: weather.Location{
-			Name:    "London",
-			Country: "UK",
-		},
-	}
-
-	// Run with: go test -race
-	const goroutines = 10
-	const iterations = 50
-
-	var wg sync.WaitGroup
-	wg.Add(goroutines * 2)
-
-	// Writers
-	for i := 0; i < goroutines; i++ {
-		go func(id int) {
-			defer wg.Done()
-			for j := 0; j < iterations; j++ {
-				location := fmt.Sprintf("Location%d", id)
-				_ = cache.Set(location, mockResponse)
-			}
-		}(i)
-	}
-
-	// Readers
-	for i := 0; i < goroutines; i++ {
-		go func(id int) {
-			defer wg.Done()
-			for j := 0; j < iterations; j++ {
-				location := fmt.Sprintf("Location%d", id)
-				_ = cache.Get(location)
-			}
-		}(i)
-	}
-
-	wg.Wait()
-
-	// Verify cache is still usable after concurrent access
-	got := cache.Get("Location0")
-	if got == nil {
-		t.Error("cache should have Location0 after concurrent writes")
 	}
 }
 
