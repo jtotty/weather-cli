@@ -2,6 +2,8 @@ package weather
 
 import (
 	"fmt"
+	"io"
+	"os"
 	"strings"
 	"time"
 
@@ -237,25 +239,28 @@ func (d *Display) Warnings() string {
 	return output.String()
 }
 
-// Render outputs the complete weather display to stdout.
 func (d *Display) Render() {
-	fmt.Print(d.Heading())
-	ui.Spacer()
+	d.RenderTo(os.Stdout)
+}
 
-	fmt.Print(d.Time())
-	ui.Spacer()
+func (d *Display) RenderTo(w io.Writer) {
+	_, _ = fmt.Fprint(w, d.Heading())
+	ui.SpacerTo(w)
 
-	fmt.Print(d.CurrentConditions())
-	ui.Spacer()
+	_, _ = fmt.Fprint(w, d.Time())
+	ui.SpacerTo(w)
 
-	fmt.Print(d.HourlyForecast())
-	ui.Spacer()
+	_, _ = fmt.Fprint(w, d.CurrentConditions())
+	ui.SpacerTo(w)
 
-	fmt.Print(d.DailyForecast())
-	ui.Spacer()
+	_, _ = fmt.Fprint(w, d.HourlyForecast())
+	ui.SpacerTo(w)
 
-	fmt.Print(d.Twilight())
-	ui.Spacer()
+	_, _ = fmt.Fprint(w, d.DailyForecast())
+	ui.SpacerTo(w)
 
-	fmt.Print(d.Warnings())
+	_, _ = fmt.Fprint(w, d.Twilight())
+	ui.SpacerTo(w)
+
+	_, _ = fmt.Fprint(w, d.Warnings())
 }
