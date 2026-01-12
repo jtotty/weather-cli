@@ -143,7 +143,7 @@ func CreateBorder(maxLen int) string {
 }
 
 func Spacer() {
-	_, _ = fmt.Fprint(os.Stdout, "\n\n")
+	SpacerTo(os.Stdout)
 }
 
 func SpacerTo(w io.Writer) {

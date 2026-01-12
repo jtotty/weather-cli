@@ -243,6 +243,8 @@ func (d *Display) Render() {
 	d.RenderTo(os.Stdout)
 }
 
+// RenderTo outputs the complete weather display to the given writer.
+// This enables testability by allowing output capture with a bytes.Buffer.
 func (d *Display) RenderTo(w io.Writer) {
 	_, _ = fmt.Fprint(w, d.Heading())
 	ui.SpacerTo(w)
