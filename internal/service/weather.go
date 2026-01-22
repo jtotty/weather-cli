@@ -29,8 +29,18 @@ type Weather struct {
 	fetcher WeatherFetcher
 }
 
-// NewWeather creates a new Weather service with default cache and API client.
-func NewWeather(cfg *config.Config) *Weather {
+// NewWeather creates a Weather service with the provided dependencies.
+func NewWeather(cfg *config.Config, c WeatherCache, fetcher WeatherFetcher) *Weather {
+	return &Weather{
+		cfg:     cfg,
+		cache:   c,
+		fetcher: fetcher,
+	}
+}
+
+// NewDefaultDeps creates the default cache and fetcher for production use.
+// Returns nil cache if creation fails (with warning printed to stderr).
+func NewDefaultDeps(cfg *config.Config) (WeatherCache, WeatherFetcher) {
 	weatherCache, err := cache.New(cache.DefaultTTL)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Warning: cache unavailable: %v\n", err)
@@ -41,20 +51,7 @@ func NewWeather(cfg *config.Config) *Weather {
 		cacheImpl = weatherCache
 	}
 
-	return &Weather{
-		cfg:     cfg,
-		cache:   cacheImpl,
-		fetcher: weather.NewClient(cfg.APIKey),
-	}
-}
-
-// NewWeatherWithDeps creates a Weather service with injected dependencies (for testing).
-func NewWeatherWithDeps(cfg *config.Config, c WeatherCache, fetcher WeatherFetcher) *Weather {
-	return &Weather{
-		cfg:     cfg,
-		cache:   c,
-		fetcher: fetcher,
-	}
+	return cacheImpl, weather.NewClient(cfg.APIKey)
 }
 
 func (w *Weather) GetWeather(ctx context.Context) (*weather.Response, error) {

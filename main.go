@@ -45,7 +45,8 @@ func runWeather(ctx context.Context, location string) {
 		cli.ExitWithError(err)
 	}
 
-	svc := service.NewWeather(cfg)
+	cache, fetcher := service.NewDefaultDeps(cfg)
+	svc := service.NewWeather(cfg, cache, fetcher)
 	application := app.NewApp(cfg, svc, os.Stdout)
 	if err := application.Run(ctx, location); err != nil {
 		if errors.Is(err, context.Canceled) {

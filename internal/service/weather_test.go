@@ -63,7 +63,10 @@ func TestNewWeather(t *testing.T) {
 		Alerts:     true,
 	}
 
-	svc := NewWeather(cfg)
+	mockCache := newMockCache()
+	mockFetcher := &mockFetcher{}
+
+	svc := NewWeather(cfg, mockCache, mockFetcher)
 
 	if svc == nil {
 		t.Fatal("NewWeather() returned nil")
@@ -71,6 +74,14 @@ func TestNewWeather(t *testing.T) {
 
 	if svc.cfg != cfg {
 		t.Error("NewWeather() did not store config reference")
+	}
+
+	if svc.cache != mockCache {
+		t.Error("NewWeather() did not store cache reference")
+	}
+
+	if svc.fetcher != mockFetcher {
+		t.Error("NewWeather() did not store fetcher reference")
 	}
 }
 
@@ -91,7 +102,7 @@ func TestGetWeather_CacheHit(t *testing.T) {
 
 	mockFetcher := &mockFetcher{}
 
-	svc := NewWeatherWithDeps(cfg, mockCache, mockFetcher)
+	svc := NewWeather(cfg, mockCache, mockFetcher)
 
 	result, err := svc.GetWeather(context.Background())
 	if err != nil {
@@ -128,7 +139,7 @@ func TestGetWeather_CacheMiss(t *testing.T) {
 	mockCache := newMockCache() // Empty cache
 	mockFetcher := &mockFetcher{response: apiResponse}
 
-	svc := NewWeatherWithDeps(cfg, mockCache, mockFetcher)
+	svc := NewWeather(cfg, mockCache, mockFetcher)
 
 	result, err := svc.GetWeather(context.Background())
 	if err != nil {
@@ -182,7 +193,7 @@ func TestGetWeather_APIError(t *testing.T) {
 	mockCache := newMockCache()
 	mockFetcher := &mockFetcher{err: errors.New("API error: location not found")}
 
-	svc := NewWeatherWithDeps(cfg, mockCache, mockFetcher)
+	svc := NewWeather(cfg, mockCache, mockFetcher)
 
 	result, err := svc.GetWeather(context.Background())
 
@@ -215,7 +226,7 @@ func TestGetWeather_CacheSetError(t *testing.T) {
 
 	mockFetcher := &mockFetcher{response: apiResponse}
 
-	svc := NewWeatherWithDeps(cfg, mockCache, mockFetcher)
+	svc := NewWeather(cfg, mockCache, mockFetcher)
 
 	result, err := svc.GetWeather(context.Background())
 	if err != nil {
@@ -240,7 +251,7 @@ func TestGetWeather_NilCache(t *testing.T) {
 
 	mockFetcher := &mockFetcher{response: apiResponse}
 
-	svc := NewWeatherWithDeps(cfg, nil, mockFetcher)
+	svc := NewWeather(cfg, nil, mockFetcher)
 
 	result, err := svc.GetWeather(context.Background())
 	if err != nil {
@@ -266,7 +277,7 @@ func TestGetWeather_ContextCancellation(t *testing.T) {
 	mockCache := newMockCache()
 	mockFetcher := &mockFetcher{err: context.Canceled}
 
-	svc := NewWeatherWithDeps(cfg, mockCache, mockFetcher)
+	svc := NewWeather(cfg, mockCache, mockFetcher)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
