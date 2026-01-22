@@ -7,11 +7,10 @@ import (
 	"os"
 	"os/signal"
 
+	"github.com/jtotty/weather-cli/internal/app"
 	"github.com/jtotty/weather-cli/internal/cli"
 	"github.com/jtotty/weather-cli/internal/config"
 	"github.com/jtotty/weather-cli/internal/credentials"
-	"github.com/jtotty/weather-cli/internal/service"
-	"github.com/jtotty/weather-cli/internal/weather"
 )
 
 var version = "dev"
@@ -45,26 +44,14 @@ func runWeather(ctx context.Context, location string) {
 		cli.ExitWithError(err)
 	}
 
-	if location != "" {
-		cfg.SetLocation(location)
-	}
-
-	svc := service.NewWeather(cfg)
-	data, err := svc.GetWeather(ctx)
-	if err != nil {
+	application := app.NewApp(cfg, os.Stdout)
+	if err := application.Run(ctx, location); err != nil {
 		if errors.Is(err, context.Canceled) {
 			fmt.Fprintln(os.Stderr, "\nRequest canceled.")
 			os.Exit(130)
 		}
 		cli.ExitWithError(fmt.Errorf("error fetching weather: %w", err))
 	}
-
-	display, err := weather.NewDisplay(data, cfg.IsLocal)
-	if err != nil {
-		cli.ExitWithError(fmt.Errorf("error creating display: %w", err))
-	}
-
-	display.Render()
 }
 
 func loadConfig() (*config.Config, error) {

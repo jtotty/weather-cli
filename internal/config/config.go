@@ -14,22 +14,26 @@ type Config struct {
 	IsLocal    bool
 }
 
-func New() (*Config, error) {
-	cfg := &Config{
+// NewWithAPIKey creates a Config with the provided API key.
+// Use this for testing or when the API key is obtained externally.
+func NewWithAPIKey(apiKey string) *Config {
+	return &Config{
+		APIKey:     apiKey,
 		Location:   "auto:ip",
 		Days:       7,
 		IncludeAQI: true,
 		Alerts:     true,
 		IsLocal:    true,
 	}
+}
 
+// New creates a Config by loading the API key from credentials.
+func New() (*Config, error) {
 	apiKey, err := credentials.GetAPIKey()
 	if err != nil {
 		return nil, err
 	}
-
-	cfg.APIKey = apiKey
-	return cfg, nil
+	return NewWithAPIKey(apiKey), nil
 }
 
 func (c *Config) SetLocation(location string) {
