@@ -7,7 +7,6 @@ import (
 
 	"github.com/jtotty/weather-cli/internal/api/weather"
 	"github.com/jtotty/weather-cli/internal/config"
-	"github.com/jtotty/weather-cli/internal/service"
 	weatherdisplay "github.com/jtotty/weather-cli/internal/weather"
 )
 
@@ -23,17 +22,9 @@ type App struct {
 	output  io.Writer
 }
 
-// NewApp creates an App with production dependencies.
-func NewApp(cfg *config.Config, output io.Writer) *App {
-	return &App{
-		config:  cfg,
-		service: service.NewWeather(cfg),
-		output:  output,
-	}
-}
-
-// NewAppWithDeps creates an App with injected dependencies (for testing).
-func NewAppWithDeps(cfg *config.Config, svc WeatherService, output io.Writer) *App {
+// NewApp creates an App with the provided dependencies.
+// All dependencies are explicit - the caller is responsible for creating them.
+func NewApp(cfg *config.Config, svc WeatherService, output io.Writer) *App {
 	return &App{
 		config:  cfg,
 		service: svc,

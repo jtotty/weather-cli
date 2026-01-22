@@ -11,6 +11,7 @@ import (
 	"github.com/jtotty/weather-cli/internal/cli"
 	"github.com/jtotty/weather-cli/internal/config"
 	"github.com/jtotty/weather-cli/internal/credentials"
+	"github.com/jtotty/weather-cli/internal/service"
 )
 
 var version = "dev"
@@ -44,7 +45,8 @@ func runWeather(ctx context.Context, location string) {
 		cli.ExitWithError(err)
 	}
 
-	application := app.NewApp(cfg, os.Stdout)
+	svc := service.NewWeather(cfg)
+	application := app.NewApp(cfg, svc, os.Stdout)
 	if err := application.Run(ctx, location); err != nil {
 		if errors.Is(err, context.Canceled) {
 			fmt.Fprintln(os.Stderr, "\nRequest canceled.")

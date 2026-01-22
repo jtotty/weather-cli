@@ -102,7 +102,7 @@ func TestApp_Run(t *testing.T) {
 			}
 			var buf bytes.Buffer
 
-			application := NewAppWithDeps(cfg, mockSvc, &buf)
+			application := NewApp(cfg, mockSvc, &buf)
 			err := application.Run(context.Background(), tt.location)
 
 			if (err != nil) != tt.wantErr {
@@ -133,7 +133,7 @@ func TestApp_Run_LocationSetsIsLocalFalse(t *testing.T) {
 	mockSvc := &mockWeatherService{response: validWeatherResponse()}
 	var buf bytes.Buffer
 
-	application := NewAppWithDeps(cfg, mockSvc, &buf)
+	application := NewApp(cfg, mockSvc, &buf)
 	err := application.Run(context.Background(), "Paris")
 
 	if err != nil {
@@ -153,7 +153,7 @@ func TestApp_Run_ContextCancellation(t *testing.T) {
 	mockSvc := &mockWeatherService{err: context.Canceled}
 	var buf bytes.Buffer
 
-	application := NewAppWithDeps(cfg, mockSvc, &buf)
+	application := NewApp(cfg, mockSvc, &buf)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
@@ -167,15 +167,16 @@ func TestApp_Run_ContextCancellation(t *testing.T) {
 
 func TestNewApp(t *testing.T) {
 	cfg := config.NewWithAPIKey("test-api-key")
+	mockSvc := &mockWeatherService{response: validWeatherResponse()}
 	var buf bytes.Buffer
 
-	application := NewApp(cfg, &buf)
+	application := NewApp(cfg, mockSvc, &buf)
 
 	if application.config != cfg {
 		t.Error("expected config to be set")
 	}
-	if application.service == nil {
-		t.Error("expected service to be created")
+	if application.service != mockSvc {
+		t.Error("expected service to be set")
 	}
 	if application.output != &buf {
 		t.Error("expected output to be set")
