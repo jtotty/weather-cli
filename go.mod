@@ -4,7 +4,7 @@ go 1.25.4
 
 require (
 	github.com/enescakir/emoji v1.0.0
-	github.com/zalando/go-keyring v0.2.7
+	github.com/zalando/go-keyring v0.2.8
 	golang.org/x/term v0.41.0
 )
 
