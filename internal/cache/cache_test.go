@@ -151,24 +151,6 @@ func TestCache(t *testing.T) {
 			t.Errorf("Get() = %v, want nil for expired entry", got)
 		}
 	})
-
-	t.Run("clear", func(t *testing.T) {
-		// Add a fresh entry
-		err := cache.Set("Paris", mockResponse)
-		if err != nil {
-			t.Fatalf("Set() error = %v", err)
-		}
-
-		err = cache.Clear()
-		if err != nil {
-			t.Fatalf("Clear() error = %v", err)
-		}
-
-		got := cache.Get("Paris")
-		if got != nil {
-			t.Errorf("Get() after Clear() = %v, want nil", got)
-		}
-	})
 }
 
 func TestCachePersistence(t *testing.T) {
@@ -306,47 +288,6 @@ func TestCacheCorruptedFile(t *testing.T) {
 	}
 }
 
-func TestCacheStats(t *testing.T) {
-	tmpDir, err := os.MkdirTemp("", "weather-cli-cache-stats-test")
-	if err != nil {
-		t.Fatalf("failed to create temp dir: %v", err)
-	}
-	defer func() { _ = os.RemoveAll(tmpDir) }()
-
-	cache := &Cache{
-		Entries: make(map[string]*Entry),
-		path:    filepath.Join(tmpDir, "cache.json"),
-		ttl:     1 * time.Hour,
-	}
-
-	mockResponse := &weather.Response{
-		Location: weather.Location{Name: "London"},
-	}
-
-	// Add some entries
-	_ = cache.Set("London", mockResponse)
-	_ = cache.Set("Paris", mockResponse)
-
-	// Add an expired entry manually
-	cache.Entries["expired"] = &Entry{
-		Location: "Expired",
-		Data:     mockResponse,
-		CachedAt: time.Now().Add(-2 * time.Hour),
-	}
-
-	total, valid, expired := cache.Stats()
-
-	if total != 3 {
-		t.Errorf("Stats() total = %d, want 3", total)
-	}
-	if valid != 2 {
-		t.Errorf("Stats() valid = %d, want 2", valid)
-	}
-	if expired != 1 {
-		t.Errorf("Stats() expired = %d, want 1", expired)
-	}
-}
-
 func TestCacheMaxEntries(t *testing.T) {
 	tmpDir, err := os.MkdirTemp("", "weather-cli-cache-max-test")
 	if err != nil {
@@ -374,7 +315,7 @@ func TestCacheMaxEntries(t *testing.T) {
 	}
 
 	// Cache should not exceed maxCacheEntries
-	total, _, _ := cache.Stats()
+	total := len(cache.Entries)
 	if total > maxCacheEntries {
 		t.Errorf("Cache size = %d, want <= %d", total, maxCacheEntries)
 	}

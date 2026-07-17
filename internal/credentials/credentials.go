@@ -103,8 +103,3 @@ func IsKeyringAvailable() bool {
 
 	return false
 }
-
-func HasStoredAPIKey() bool {
-	key, err := keyring.Get(serviceName, apiKeyName)
-	return err == nil && key != ""
-}

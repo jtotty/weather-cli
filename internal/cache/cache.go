@@ -104,27 +104,6 @@ func (c *Cache) Set(location string, data *weather.Response) error {
 	return c.save()
 }
 
-func (c *Cache) Clear() error {
-	c.Entries = make(map[string]*Entry)
-	return c.save()
-}
-
-func (c *Cache) Path() string {
-	return c.path
-}
-
-func (c *Cache) Stats() (total, valid, expired int) {
-	total = len(c.Entries)
-	for _, entry := range c.Entries {
-		if entry.IsValid(c.ttl) {
-			valid++
-		} else {
-			expired++
-		}
-	}
-	return
-}
-
 func (c *Cache) load() error {
 	data, err := os.ReadFile(c.path)
 	if err != nil {

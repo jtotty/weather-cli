@@ -3,7 +3,6 @@ package ui
 import (
 	"fmt"
 	"io"
-	"os"
 	"strings"
 
 	"github.com/enescakir/emoji"
@@ -140,10 +139,6 @@ func CreateBorder(maxLen int) string {
 	}
 
 	return border.String()
-}
-
-func Spacer() {
-	SpacerTo(os.Stdout)
 }
 
 func SpacerTo(w io.Writer) {
