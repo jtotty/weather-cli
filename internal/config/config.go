@@ -14,7 +14,7 @@ type Config struct {
 	IsLocal    bool
 }
 
-func New() (*Config, error) {
+func New(store credentials.Store) (*Config, error) {
 	cfg := &Config{
 		Location:   "auto:ip",
 		Days:       7,
@@ -23,7 +23,7 @@ func New() (*Config, error) {
 		IsLocal:    true,
 	}
 
-	apiKey, err := credentials.GetAPIKey()
+	apiKey, err := store.Get()
 	if err != nil {
 		return nil, err
 	}

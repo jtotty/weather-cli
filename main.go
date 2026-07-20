@@ -8,7 +8,6 @@ import (
 	"os/signal"
 
 	"github.com/jtotty/weather-cli/internal/cli"
-	"github.com/jtotty/weather-cli/internal/config"
 	"github.com/jtotty/weather-cli/internal/credentials"
 	"github.com/jtotty/weather-cli/internal/service"
 	"github.com/jtotty/weather-cli/internal/weather"
@@ -18,6 +17,7 @@ var version = "dev"
 
 func main() {
 	cmd := cli.Parse(os.Args)
+	store := credentials.NewEnvOverride(credentials.NewKeyring())
 
 	switch cmd.Type {
 	case cli.CommandHelp:
@@ -25,22 +25,22 @@ func main() {
 	case cli.CommandVersion:
 		cli.PrintVersion(version)
 	case cli.CommandSetup:
-		if err := cli.RunSetup(); err != nil {
+		if err := cli.RunSetup(store, cli.ReadKeyFromTerminal); err != nil {
 			cli.ExitWithError(fmt.Errorf("setup failed: %w", err))
 		}
 	case cli.CommandDeleteKey:
-		if err := cli.RunDeleteKey(); err != nil {
+		if err := cli.RunDeleteKey(store); err != nil {
 			cli.ExitWithError(fmt.Errorf("failed to delete API key: %w", err))
 		}
 	case cli.CommandWeather:
 		ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 		defer cancel()
-		runWeather(ctx, cmd.Location)
+		runWeather(ctx, store, cmd.Location)
 	}
 }
 
-func runWeather(ctx context.Context, location string) {
-	cfg, err := loadConfig()
+func runWeather(ctx context.Context, store credentials.Store, location string) {
+	cfg, err := cli.LoadConfig(store, cli.ReadKeyFromTerminal)
 	if err != nil {
 		cli.ExitWithError(err)
 	}
@@ -65,22 +65,4 @@ func runWeather(ctx context.Context, location string) {
 	}
 
 	display.Render()
-}
-
-func loadConfig() (*config.Config, error) {
-	cfg, err := config.New()
-	if err == nil {
-		return cfg, nil
-	}
-
-	if errors.Is(err, credentials.ErrNoAPIKey) {
-		fmt.Println("No API key configured.")
-		fmt.Println()
-		if setupErr := cli.RunSetup(); setupErr != nil {
-			return nil, fmt.Errorf("setup failed: %w", setupErr)
-		}
-		return config.New()
-	}
-
-	return nil, fmt.Errorf("error loading config: %w", err)
 }

@@ -12,7 +12,7 @@ CLI weather tool using WeatherAPI.com. Go 1.25, single binary, OS keyring for cr
 │   ├── cache/                   # File-based cache (30min TTL)
 │   ├── cli/                     # Arg parsing, help, setup wizard
 │   ├── config/                  # Config struct, URL builder
-│   ├── credentials/             # OS keyring (zalando/go-keyring)
+│   ├── credentials/             # Credential store: Store interface, keyring adapter, env override, fake
 │   ├── service/                 # Weather service (orchestrates cache + API)
 │   ├── ui/                      # Icons, borders, ANSI colors
 │   └── weather/                 # Display formatting
@@ -46,6 +46,8 @@ golangci-lint run                # Lint (v2)
 | `Config` | config/config.go | API key, location, days |
 | `Display` | weather/display.go | Formats weather output |
 | `Parse` | cli/cli.go | Arg parsing, returns Command |
+| `Store` | credentials/credentials.go | Credential store seam: `Get`/`Set`/`Delete`/`Available` |
+| `LoadConfig` | cli/setup.go | Config loading incl. guided setup on missing key |
 
 ## Code Style
 - **Imports**: stdlib > external > internal
@@ -80,7 +82,7 @@ golangci-lint run                # Lint (v2)
 - Never suppress errors silently - always log or return
 
 ## Gotchas
-- API key stored in OS keyring, not config file - use `credentials.Get()`
+- API key stored in OS keyring, not config file - access it via the `credentials.Store` interface (main wires `NewEnvOverride(NewKeyring())`; tests use `credentials.Fake`)
 - Cache uses `float32` for weather data, not `float64`
 - `internal/` packages can't be imported externally
 - golangci-lint v2 syntax differs from v1 - check `.golangci.yml`

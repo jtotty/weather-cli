@@ -1,28 +1,37 @@
 package config
 
 import (
+	"errors"
 	"testing"
+
+	"github.com/jtotty/weather-cli/internal/credentials"
 )
 
-func TestNew_WithEnvAPIKey(t *testing.T) {
-	t.Setenv("WEATHER_API_KEY", "test-api-key")
+func TestNew_UsesKeyFromStore(t *testing.T) {
+	store := &credentials.Fake{Key: "test-api-key"}
 
-	cfg, err := New()
+	cfg, err := New(store)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
-	}
-	if cfg == nil {
-		t.Fatal("expected config, got nil")
 	}
 	if cfg.APIKey != "test-api-key" {
 		t.Errorf("APIKey = %q, want %q", cfg.APIKey, "test-api-key")
 	}
 }
 
-func TestNew_DefaultValues(t *testing.T) {
-	t.Setenv("WEATHER_API_KEY", "test-key")
+func TestNew_MissingKeyReturnsErrNoAPIKey(t *testing.T) {
+	store := &credentials.Fake{}
 
-	cfg, err := New()
+	_, err := New(store)
+	if !errors.Is(err, credentials.ErrNoAPIKey) {
+		t.Errorf("New() error = %v, want ErrNoAPIKey", err)
+	}
+}
+
+func TestNew_DefaultValues(t *testing.T) {
+	store := &credentials.Fake{Key: "test-key"}
+
+	cfg, err := New(store)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -45,9 +54,9 @@ func TestNew_DefaultValues(t *testing.T) {
 }
 
 func TestSetLocation_SetsIsLocalFalse(t *testing.T) {
-	t.Setenv("WEATHER_API_KEY", "test-key")
+	store := &credentials.Fake{Key: "test-key"}
 
-	cfg, err := New()
+	cfg, err := New(store)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
